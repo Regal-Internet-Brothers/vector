@@ -31,10 +31,6 @@ Class AbstractVector<T>
 	' Constant variables:
 	Const XPOS:Int = 0
 	Const QuoteChar:Int = 34 ' Also known as ' " '.
-	
-	Const Space:String = " "
-	Const Comma:String = ","
-	Const SingleQuote:String = "'"
 	Const VECTORSIZE:Int = 1
 	Const AUTO:Int		= -1
 	
@@ -173,7 +169,19 @@ Class AbstractVector<T>
 		Return
 	End
 	
-	Method Invert:Void(VDataLength:Int=AUTO, Offset:Int=XPOS)
+	Method Absolute:Void(VDataLength:Int=AUTO, Offset:Int=XPOS)
+		If (VDataLength = AUTO) Then
+			VDataLength = Data.Length()
+		Endif
+		
+		For Local I:Int = Offset Until VDataLength
+			Data[I] = Abs(Data[I])
+		Next
+		
+		Return
+	End
+	
+	Method Negate:Void(VDataLength:Int=AUTO, Offset:Int=XPOS)
 		If (VDataLength = AUTO) Then
 			VDataLength = Data.Length()
 		Endif
@@ -181,6 +189,13 @@ Class AbstractVector<T>
 		For Local I:Int = Offset Until VDataLength
 			Data[I] = -Data[I]
 		Next
+		
+		Return
+	End
+	
+	Method ForceNegative:Void(VDataLength:Int=AUTO, Offset:Int=XPOS)
+		Absolute(VDataLength, Offset)
+		Negate(VDataLength, Offset)
 		
 		Return
 	End
@@ -711,6 +726,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method AsPerpendicular:Void()
+		'AsPerpendicular(X, Y)
 		AsPerpendicular(-Y, X)
 		
 		Return
