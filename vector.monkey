@@ -54,34 +54,23 @@ Import brl.stream
 Import util
 Import ioelement
 
-#Rem
-	' Aliases:
-	Alias Vector = ManualVector
-	'Alias Vec1D = Vector1D
-	Alias Vec2D = Vector2D
-	Alias Vec3D = Vector3D
-	Alias Vec4D = Vector4D
-	'Alias Vec = Vector1D
-	'Alias Vec1 = Vector1D
-	Alias Vec2 = Vector2D
-	Alias Vec3 = Vector3D
-	Alias Vec4 = Vector4D
-	
-	Alias ManualVec = ManualVector
-#End
-
 ' Global variable(s):
 ' Nothing so far.
 
 ' Constant variable(s):
 Const VECTOR_AUTO:Int = -1
 
+' Property data-positions:
+Const VECTOR_XPOSITION:= 0
+Const VECTOR_YPOSITION:= 1
+Const VECTOR_ZPOSITION:= 2
+
 ' Interfaces:
 Interface Vector<T>
 	' Constant variable(s):
-	Const XPOS:= 0
-	Const YPOS:= 1
-	Const ZPOS:= 2
+	Const XPOS:= VECTOR_XPOSITION
+	Const YPOS:= VECTOR_YPOSITION
+	Const ZPOS:= VECTOR_ZPOSITION
 	
 	Const AUTO:= VECTOR_AUTO
 	
