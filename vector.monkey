@@ -52,6 +52,7 @@ Import brl.stream
 
 ' ImmutableOctet:
 Import util
+Import ioelement
 
 #Rem
 	' Aliases:
@@ -78,9 +79,65 @@ Const VECTOR_AUTO:Int = -1
 ' Interfaces:
 Interface Vector<T>
 	' Constant variable(s):
+	Const XPOS:= 0
+	Const YPOS:= 1
+	Const ZPOS:= 2
+	
 	Const AUTO:= VECTOR_AUTO
 	
 	' Methods (Public):
+	Method GetData:T(Index:Int)
+	Method GetData:T[]()
+	
+	Method SetData:Void(Index:Int, Info:T)
+	
+	' Mathematical commands:
+	Method Zero:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Absolute:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Negate:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method ForceNegative:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method ApplyMin:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method ApplyMax:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method ApplyClamp:Void(MinValue:T, MaxValue:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Add:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Add:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Add:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method DeltaAdd:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method DeltaAdd:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method DeltaAdd:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Decelerate:Void(Deceleration:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Accelerate:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Subtract:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Subtract:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Subtract:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Devide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Devide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Devide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Multiply:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Multiply:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Multiply:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method LinearInterpolation:Void(V:Vector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method LinearInterpolation:Void(A:T[], t:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	
+	Method Normalize:Void()
+	Method Normalize:Void(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method DotProductNormalized:T(V:Vector<T>)
+	
+	Method SubtractTowardsZero:Void(Time:T=T(1.0), VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
 	' Methods (Private):
 	Private
@@ -89,11 +146,16 @@ Interface Vector<T>
 	Method Resize:Bool(Size:Int)
 	
 	Method Grow:Bool(GrowthIndex:Int=AUTO)
+	Method ControlledGrow:Bool(Index:Int=AUTO)
 	
 	Public
 	
 	' Properties (Public):
+	Method Data:T[]() Property
+	Method Size:Int() Property
 	
+	Method X:T() Property
+	Method X:Void(Info:T) Property
 	
 	' Properties (Private):
 	Private
@@ -104,9 +166,9 @@ Interface Vector<T>
 End
 
 ' Classes:
-Class AbstractVector<T> Implements Vector<T> ' Abstract
+Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	' Constant variables:
-	Const XPOS:Int					= 0
+	Const XPOS:= Vector<T>.XPOS
 	
 	Const VECTORSIZE:Int			= 1
 	
@@ -135,7 +197,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return "Vector (Abstract)"
 	End
 	
-	Function DotProductNormalized:T(V1:AbstractVector<T>, V2:AbstractVector<T>)
+	Function DotProductNormalized:T(V1:Vector<T>, V2:Vector<T>)
 		Return V1.DotProductNormalized(V2)
 	End
 	
@@ -162,7 +224,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Assign(Info, Size, Offset)
 	End
 	
-	Method New(V:AbstractVector<T>, Size:Int=AUTO)
+	Method New(V:Vector<T>, Size:Int=AUTO)
 		' Local variable(s):
 		Local FitVector:Bool = False
 		
@@ -192,29 +254,29 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 	Public
 
 	' Methods:
-	Method Clone:AbstractVector<T>()
+	Method Clone:Vector<T>()
 		Return New AbstractVector<T>(Data)
 	End
 	
-	Method Clone:Void(V:AbstractVector<T>)
+	Method Clone:Void(V:Vector<T>)
 		Assign(V)
 		
 		Return
 	End
 	
-	Method Copy:Void(V:AbstractVector<T>)
+	Method Copy:Void(V:Vector<T>)
 		Clone(V)
 		
 		Return
 	End
 	
-	Method Copy:Void(Info:T[], Size:Int=AUTO)
-		Assign(Info, Size)
+	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS)
+		Assign(Info, Size, Offset)
 		
 		Return
 	End
 	
-	Method Assign:Void(V:AbstractVector<T>, FitVector:Bool=False)
+	Method Assign:Void(V:Vector<T>, FitVector:Bool=False)
 		' Check for errors:
 		If (V = Null) Then Return
 		
@@ -467,7 +529,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 	End
 	
 	' Add the input-vector to this vector:
-	Method Add:Void(V:AbstractVector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Add:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		Add(V.Data, VData_Length, VData_Offset)
 		
 		Return
@@ -504,7 +566,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return
 	End
 	
-	Method DeltaAdd:Void(V:AbstractVector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method DeltaAdd:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		DeltaAdd(V.Data, Scalar, VData_Length, VData_Offset)
 		
 		Return
@@ -561,14 +623,14 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return
 	End
 	
-	Method Accelerate:Void(V:AbstractVector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Accelerate:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		DeltaAdd(V, Scalar, VData_Length, VData_Offset)
 		
 		Return
 	End
 	
 	' Subtract the input-vector from this vector:
-	Method Subtract:Void(V:AbstractVector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Subtract:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		Subtract(V.Data, VData_Length, VData_Offset)
 		
 		Return
@@ -605,7 +667,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return
 	End
 	
-	Method Devide:Void(V:AbstractVector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Devide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		Devide(V.Data, VData_Length, VData_Offset)
 		
 		Return
@@ -641,7 +703,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return
 	End
 	
-	Method Multiply:Void(V:AbstractVector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Multiply:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		Multiply(V.Data, VData_Length, VData_Offset)
 		
 		Return
@@ -694,7 +756,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return Sqrt(Sum)
 	End
 	
-	Method LinearInterpolation:Void(V:AbstractVector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method LinearInterpolation:Void(V:Vector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		LinearInterpolation(V.Data, t, VData_Length, VData_Offset)
 		
 		Return
@@ -733,7 +795,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return
 	End
 	
-	Method DotProduct:T(V:AbstractVector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		Return DotProduct(V.Data, VData_Length, VData_Offset)
 	End
 	
@@ -754,7 +816,7 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Return Sum
 	End
 	
-	Method DotProductNormalized:T(V:AbstractVector<T>)
+	Method DotProductNormalized:T(V:Vector<T>)
 		' Local variable(s):
 		Local Result:T
 		
@@ -805,6 +867,14 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 		Endif
 		
 		Return Name()
+	End
+	
+	Method Load:Bool(S:Stream)
+		Return Read(S)
+	End
+	
+	Method Save:Bool(S:Stream)
+		Return Write(S)
 	End
 	
 	Method Read:Bool(S:Stream, ReadSize:Int=0)
@@ -907,6 +977,16 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 	' Properties (Private):
 	Private
 	
+	Method Data:T[]() Property
+		Return Self._Data
+	End
+	
+	Method Data:Void(Input:T[]) Property
+		Self._Data = Input
+		
+		Return
+	End
+	
 	Method AutoGrow:Void(Input:Bool) Property
 		Self._AutoGrow = Input
 		
@@ -921,7 +1001,8 @@ Class AbstractVector<T> Implements Vector<T> ' Abstract
 	' Fields (Private):
 	Private
 	
-	Field Data:T[]
+	' The internal data container.
+	Field _Data:T[]
 	
 	' Booleans / Flags:
 	
@@ -996,7 +1077,7 @@ End
 
 Class Vector2D<T> Extends AbstractVector<T>
 	' Constant variables:
-	Const YPOS:Int = 1
+	Const YPOS:= Vector<T>.YPOS
 	Const VECTORSIZE:Int = 2
 
 	' Functions:
@@ -1029,7 +1110,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:AbstractVector<T>, Size:Int=VECTORSIZE)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
 		Super.New(V, Size)
 	End
 	
@@ -1041,7 +1122,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 		
 	' Methods (Public):	
-	Method Clone:AbstractVector<T>()
+	Method Clone:Vector<T>()
 		Return CloneAs2D()
 	End
 	
@@ -1098,7 +1179,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	'#End
 	
-	Method Add2D:Vector2D<T>(V:AbstractVector<T>)
+	Method Add2D:Vector2D<T>(V:Vector<T>)
 		Local VOut:= (New Vector2D<T>(Self))
 		
 		VOut.Add(V)
@@ -1106,7 +1187,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOut
 	End
 	
-	Method Subtract2D:Vector2D<T>(V:AbstractVector<T>)
+	Method Subtract2D:Vector2D<T>(V:Vector<T>)
 		Local VOut:= (New Vector2D<T>(Self))
 		
 		VOut.Subtract(V)
@@ -1114,7 +1195,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOut
 	End
 	
-	Method Devide2D:Vector2D<T>(V:AbstractVector<T>)
+	Method Devide2D:Vector2D<T>(V:Vector<T>)
 		Local VOut:= (New Vector2D<T>(Self))
 		
 		VOut.Devide(V)
@@ -1122,7 +1203,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOut
 	End
 	
-	Method Multiply2D:Vector2D<T>(V:AbstractVector<T>)
+	Method Multiply2D:Vector2D<T>(V:Vector<T>)
 		Local VOut:= (New Vector2D<T>(Self))
 		
 		VOut.Multiply(V)
@@ -1214,7 +1295,7 @@ End
 
 Class Vector3D<T> Extends Vector2D<T>
 	' Constant variables:
-	Const ZPOS:Int = 2
+	Const ZPOS:= Vector<T>.ZPOS
 	Const VECTORSIZE:Int = 3
 
 	' Functions:
@@ -1247,7 +1328,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:AbstractVector<T>, Size:Int=VECTORSIZE)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
 		Super.New(V, Size)
 	End
 	
@@ -1258,7 +1339,7 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	' Methods:
-	Method Clone:AbstractVector<T>()
+	Method Clone:Vector<T>()
 		Return New Vector3D<T>(GetData())
 	End
 	
@@ -1321,7 +1402,7 @@ Class Vector4D<T> Extends Vector3D<T>
 	Const APOS:Int = XPOS
 	Const BPOS:Int = YPOS
 	Const CPOS:Int = ZPOS
-	Const DPOS:Int = 3
+	Const DPOS:Int = ZPOS+1
 	
 	Const VECTORSIZE:Int = 4
 
@@ -1355,7 +1436,7 @@ Class Vector4D<T> Extends Vector3D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:AbstractVector<T>, Size:Int=VECTORSIZE)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
 		Super.New(V, Size)
 	End
 	
@@ -1366,7 +1447,7 @@ Class Vector4D<T> Extends Vector3D<T>
 	End
 
 	' Methods:
-	Method Clone:AbstractVector<T>()
+	Method Clone:Vector<T>()
 		Return New Vector4D<T>(GetData())
 	End
 	
@@ -1476,7 +1557,7 @@ Class ManualVector<T> Extends Vector4D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:AbstractVector<T>, Size:Int=AUTO)
+	Method New(V:Vector<T>, Size:Int=AUTO)
 		Super.New(V, Size)
 	End
 	
@@ -1493,7 +1574,7 @@ Class ManualVector<T> Extends Vector4D<T>
 	End
 	
 	' Methods:
-	Method Clone:AbstractVector<T>()
+	Method Clone:Vector<T>()
 		Return New ManualVector<T>(GetData())
 	End
 	
