@@ -4,10 +4,7 @@ Public
 
 #Rem
 	TODO:
-		* Fix/add all of the improper/missing offset arguments.
 		* Change several uses of "Data.Length()" to use the 'Size' property.
-		* Finish working on the 'Vector' interface.
-		* Move the 'ManualVector' class's 'ToString' implementation to the standard 'PrintArray' command.
 		
 	GENERAL ARGUMENT NOTES:
 		* When reading the arguments of some of these commands, you'll find some common names.
@@ -44,6 +41,7 @@ Public
 #VECTOR_GROW_ON_ACCESS = True
 #VECTOR_ALLOW_EXACT_GROWTH = True
 #VECTOR_SMART_GROW = True
+#VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
 
 ' Imports:
 
@@ -75,6 +73,12 @@ Interface Vector<T>
 	Const AUTO:= VECTOR_AUTO
 	
 	' Methods (Public):
+	
+	' Conversion commands:
+	Method ToString:String()
+	Method ToString:String(GiveName:Bool, FixErrors:Bool=True)
+	
+	' General purpose commands:
 	Method GetData:T(Index:Int)
 	Method GetData:T[]()
 	
@@ -1583,13 +1587,17 @@ Class ManualVector<T> Extends Vector4D<T>
 		If (Not GiveName) Then
 			Local OutStr:String
 			
-			For Local Index:= XPOS Until Size
-				OutStr += String("[" + String(Index) + "]: " + SingleQuote + String(GetData(Index)) + SingleQuote)
-				
-				If (Index < LastIndex) Then
-					OutStr += (Comma + Space)
-				Endif
-			Next
+			#If VECTOR_TOSTRING_USE_GENERIC_UTIL
+				OutStr = GenericUtilities<T>.AsString(GetData())
+			#Else
+				For Local Index:= XPOS Until Size
+					OutStr += String("[" + String(Index) + "]: " + SingleQuote + String(GetData(Index)) + SingleQuote)
+					
+					If (Index < LastIndex) Then
+						OutStr += (Comma + Space)
+					Endif
+				Next
+			#End
 			
 			If (FixErrors) Then
 				If (OutStr.Find(SingleQuote+SingleQuote) <> -1) Then
