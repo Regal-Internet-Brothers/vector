@@ -42,6 +42,7 @@ Public
 #VECTOR_ALLOW_EXACT_GROWTH = True
 #VECTOR_SMART_GROW = True
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
+#VECTOR_ALTERNATE_DIVISION = False
 
 ' Imports:
 
@@ -110,9 +111,9 @@ Interface Vector<T>
 	Method Subtract:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method Subtract:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
-	Method Devide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Devide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method Devide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Divide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Divide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Divide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
 	Method Multiply:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method Multiply:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
@@ -660,13 +661,13 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Return
 	End
 	
-	Method Devide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		Devide(V.Data, VData_Length, VData_Offset)
+	Method Divide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Divide(V.Data, VData_Length, VData_Offset)
 		
 		Return
 	End
 	
-	Method Devide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method Divide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
 		Local A_RawLength:= A.Length()
 		
@@ -675,23 +676,38 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] /= A[Index]
+			#If Not VECTOR_ALTERNATE_DIVISION
+				Data[Index] /= A[Index]
+			#Else
+				' Local variable(s):
+				Local A_I:= A[Index]
+				
+				If (A_I <> NIL) Then
+					Data[Index] *= (T(1.0)/A_I)
+				Else
+					Data[Index] = NIL
+				Endif
+			#End
 		Next
 		
 		Return
 	End
 	
-	Method Devide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
-		
-		If (VData_Length = AUTO) Then
-			VData_Length = VData_RawLength
-		Endif
-		
-		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[Index] /= F
-		Next
+	Method Divide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		#If VECTOR_ALTERNATE_DIVISION
+			Multiply(T(1.0)/F, VData_Length, VData_Offset)
+		#Else
+			' Local variable(s):
+			Local VData_RawLength:= Data.Length()
+			
+			If (VData_Length = AUTO) Then
+				VData_Length = VData_RawLength
+			Endif
+			
+			For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
+				Data[Index] /= F
+			Next
+		#End
 		
 		Return
 	End
@@ -780,10 +796,8 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method Normalize:Void(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		If (Length <> NIL) Then
-			Length = 1.0 / Length
+			Divide(Length, VData_Length, VData_Offset)
 		Endif
-		
-		Multiply(Length, VData_Length, VData_Offset)
 		
 		Return
 	End
@@ -803,7 +817,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Local Sum:T = NIL
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Sum += Data[Index]*A[Index] ' Pow(..., 2)
+			Sum += Data[Index]*A[Index]
 		Next
 		
 		Return Sum
@@ -1188,10 +1202,10 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOut
 	End
 	
-	Method Devide2D:Vector2D<T>(V:Vector<T>)
+	Method Divide2D:Vector2D<T>(V:Vector<T>)
 		Local VOut:= (New Vector2D<T>(Self))
 		
-		VOut.Devide(V)
+		VOut.Divide(V)
 		
 		Return VOut
 	End
