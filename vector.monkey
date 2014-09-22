@@ -44,6 +44,14 @@ Public
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
 #VECTOR_ALTERNATE_DIVISION = False
 
+#If CONFIG = "debug"
+	#VECTOR_SAFETY = True
+	#VECTOR_NUMBER_SAFETY = True
+#Else
+	#VECTOR_SAFETY = True ' False
+	#VECTOR_NUMBER_SAFETY = False
+#End
+
 ' Imports:
 
 ' BRL:
@@ -177,9 +185,17 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	Const Default_ToString_FixErrors:Bool = True
 	
 	' Global variables:
+	
+	' The default value of the type specified.
 	Global NIL:T
 	
+	' The name of this class.
+	Global Name_Str:String = "Vector (Abstract)"
+	
 	' Defaults:
+	
+	' The default multiplier used for container growth.
+	Global Default_GrowthMultiplier:Float = 1.5 ' 2.0
 	
 	' Booleans / Flags:
 	
@@ -188,7 +204,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	' Functions:
 	Function Name:String()
-		Return "Vector (Abstract)"
+		Return Name_Str
 	End
 	
 	Function DotProductNormalized:T(V1:Vector<T>, V2:Vector<T>)
@@ -272,7 +288,9 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method Assign:Void(V:Vector<T>, FitVector:Bool=False)
 		' Check for errors:
-		If (V = Null) Then Return
+		#If VECTOR_SAFETY
+			If (V = Null) Then Return
+		#End
 		
 		Assign(V.Data, FitVector)
 	
@@ -304,29 +322,31 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	End
 	
 	Method GetData:T(Index:Int)
-		If (Index >= Size) Then
-			#If VECTOR_GROW_ON_ACCESS
-				If (AutoGrow) Then
-					ControlledGrow(Index)
-				Else
-			#End
-					#If CONFIG = "debug"
-						VectorError("Attempted to access an invalid or non-existent element.")
-					#End
-				
-					Return NIL
-			#If VECTOR_GROW_ON_ACCESS
-				Endif
-			#End
-		Endif
-		
-		If (Index < XPOS) Then
-			#If CONFIG = "debug"
-				VectorError("Attempted to access protected memory.")
-			#End
+		#If VECTOR_SAFETY
+			If (Index >= Size) Then
+				#If VECTOR_GROW_ON_ACCESS
+					If (AutoGrow) Then
+						ControlledGrow(Index)
+					Else
+				#End
+						#If CONFIG = "debug"
+							VectorError("Attempted to access an invalid or non-existent element.")
+						#End
+					
+						Return NIL
+				#If VECTOR_GROW_ON_ACCESS
+					Endif
+				#End
+			Endif
 			
-			Return NIL
-		Endif
+			If (Index < XPOS) Then
+				#If CONFIG = "debug"
+					VectorError("Attempted to access protected memory.")
+				#End
+				
+				Return NIL
+			Endif
+		#End
 		
 		Return Self.Data[Index]
 	End
@@ -340,10 +360,12 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			ControlledGrow(Index)
 		Endif
 		
-		#If CONFIG = "debug"
-			If (Index >= Size) Then
-				DebugStop()
-			Endif
+		#If VECTOR_SAFETY
+			#If CONFIG = "debug"
+				If (Index >= Size) Then
+					DebugStop()
+				Endif
+			#End
 		#End
 		
 		Self.Data[Index] = Info		
@@ -359,7 +381,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	End
 	
 	Method Resize:Bool()
-		Self.Data = Self.Data.Resize(Size*2)
+		Self.Data = Self.Data.Resize(Size * GrowthMultiplier)
 		
 		' Return the default response.
 		Return True
@@ -371,9 +393,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			Return Resize()
 		Endif
 		
-		If (GrowthIndex < Size) Then
-			Return False
-		Endif
+		#If VECTOR_SAFETY
+			If (GrowthIndex < Size) Then
+				Return False
+			Endif
+		#End
 		
 		Local Growth:Int = (GrowthIndex-(LastIndex))
 		
@@ -393,9 +417,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Local Size:= Self.Size
 		
 		' Check for errors:
-		If (Index <> AUTO And Index < Size) Then
-			Return False
-		Endif
+		#If VECTOR_SAFETY
+			If (Index <> AUTO And Index < Size) Then
+				Return False
+			Endif
+		#End
 		
 		#If VECTOR_SMART_GROW
 			' If we were using a different memory model, this would work well:
@@ -680,13 +706,17 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 				Data[Index] /= A[Index]
 			#Else
 				' Local variable(s):
-				Local A_I:= A[Index]
+				Local A_On_Index:= A[Index]
 				
-				If (A_I <> NIL) Then
-					Data[Index] *= (T(1.0)/A_I)
-				Else
-					Data[Index] = NIL
-				Endif
+				#If VECTOR_NUMBER_SAFETY
+					If (A_On_Index <> NIL) Then
+				#End
+						Data[Index] *= (T(1.0)/A_On_Index)
+				#If VECTOR_NUMBER_SAFETY
+					Else
+						Data[Index] = NIL
+					Endif
+				#End
 			#End
 		Next
 		
@@ -695,7 +725,13 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method Divide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		#If VECTOR_ALTERNATE_DIVISION
-			Multiply(T(1.0)/F, VData_Length, VData_Offset)
+			#If VECTOR_NUMBER_SAFETY
+				If (F <> NIL) Then
+			#End
+					Multiply(T(1.0)/F, VData_Length, VData_Offset)
+			#If VECTOR_NUMBER_SAFETY
+				Endif
+			#End
 		#Else
 			' Local variable(s):
 			Local VData_RawLength:= Data.Length()
@@ -779,7 +815,9 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			A_Length = A_RawLength
 		Endif
 		
-		t = Clamp(t, T(0.0), T(1.0))
+		#If VECTOR_NUMBER_SAFETY
+			t = Clamp(t, T(0.0), T(1.0))
+		#End
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
 			Data[Index] = Data[Index] + (A[Index]-Data[Index]) * t
@@ -851,7 +889,9 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		' Ensure we have a valid delta.
-		Time = Clamp(Time, T(0), T(1))
+		#If VECTOR_NUMBER_SAFETY
+			Time = Clamp(Time, T(0), T(1))
+		#End
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
 			If (Data[I] > T(0)) Then
@@ -886,9 +926,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method Read:Bool(S:Stream, ReadSize:Int=0)
 		' Check for errors:
-		If (S = Null Or S.Eof()) Then
-			Return False
-		Endif
+		#If VECTOR_SAFETY
+			If (S = Null Or S.Eof()) Then
+				Return False
+			Endif
+		#End
 		
 		If (ReadSize = 0) Then
 			ReadSize = Self.Data.Length()
@@ -902,9 +944,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method Write:Bool(S:Stream, WriteSize:Bool=False)
 		' Check for errors:
-		If (S = Null) Then
-			Return False
-		Endif
+		#If VECTOR_SAFETY
+			If (S = Null) Then
+				Return False
+			Endif
+		#End
 		
 		GenericUtilities<T>.Write(S, Self.Data, WriteSize)
 		
@@ -965,6 +1009,10 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	
 	Method LastIndex:Int() Property
 		Return Size-1
+	End
+	
+	Method GrowthMultiplier:Float() Property
+		Return Default_GrowthMultiplier
 	End
 	
 	Method AutoGrow:Bool() Property
@@ -1086,10 +1134,15 @@ Class Vector2D<T> Extends AbstractVector<T>
 	' Constant variables:
 	Const YPOS:= Vector<T>.YPOS
 	Const VECTORSIZE:Int = 2
+	
+	' Global variable(s):
+	
+	' The name of this class.
+	Global Name_Str:String = "Vector(2D)"
 
 	' Functions:
 	Function Name:String()
-		Return "Vector(2D)"
+		Return Name_Str
 	End
 	
 	Function FromInts:Vector2D<T>(X:Int, Y:Int)
@@ -1304,10 +1357,15 @@ Class Vector3D<T> Extends Vector2D<T>
 	' Constant variables:
 	Const ZPOS:= Vector<T>.ZPOS
 	Const VECTORSIZE:Int = 3
+	
+	' Global variable(s):
+	
+	' The name of this class.
+	Global Name_Str:String = "Vector(3D)"
 
 	' Functions:
 	Function Name:String()
-		Return "Vector(3D)"
+		Return Name_Str
 	End
 	
 	Function FromInts:Vector3D<T>(X:Int, Y:Int, Z:Int)
@@ -1412,10 +1470,15 @@ Class Vector4D<T> Extends Vector3D<T>
 	Const DPOS:Int = ZPOS+1
 	
 	Const VECTORSIZE:Int = 4
+	
+	' Global variable(s):
+	
+	' The name of this class.
+	Global Name_Str:String = "Vector(4D)"
 
 	' Functions:
 	Function Name:String()
-		Return "Vector(4D)"
+		Return Name_Str
 	End
 	
 	Function FromInts:Vector4D<T>(A:Int, B:Int, C:Int, D:Int)
@@ -1546,9 +1609,14 @@ Class ManualVector<T> Extends Vector4D<T>
 	' Defaults:
 	Const Default_ExactGrowthThreshold:Int = VECTORSIZE
 	
+	' Global variable(s):
+	
+	' The name of this class.
+	Global Name_Str:String = "Vector"
+	
 	' Functions:
 	Function Name:String()
-		Return "Vector"
+		Return Name_Str
 	End
 
 	' Constructor(s):
