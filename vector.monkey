@@ -42,7 +42,12 @@ Public
 #VECTOR_ALLOW_EXACT_GROWTH = True
 #VECTOR_SMART_GROW = True
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
-#VECTOR_ALTERNATE_DIVISION = True ' False
+
+#If CONFIG = "release"
+	#VECTOR_ALTERNATE_DIVISION = True
+#Else
+	#VECTOR_ALTERNATE_DIVISION = False
+#End
 
 #If CONFIG = "debug"
 	#VECTOR_SAFETY = True
@@ -731,7 +736,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 					Multiply(T(1.0)/F, VData_Length, VData_Offset)
 			#If VECTOR_NUMBER_SAFETY
 				Else
-					Multiply(0.0, VData_Length, VData_Offset)
+					Zero(VData_Length, VData_Offset)
 				Endif
 			#End
 		#Else
