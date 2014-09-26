@@ -1895,11 +1895,11 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	Function FromInts:Vector3D<T>(X:Int, Y:Int, Z:Int)
-		Return FromFloats(Float(X), Float(Y), Float(Z))
+		Return New Vector3D<T>(T(X), T(Y), T(Z))
 	End
 	
 	Function FromFloats:Vector3D<T>(X:Float, Y:Float, Z:Float)
-		Return New Vector3D(T(X), T(Y), T(Z))
+		Return New Vector3D<T>(T(X), T(Y), T(Z))
 	End
 	
 	' Constructor(s):
@@ -2167,7 +2167,7 @@ Class Vector4D<T> Extends Vector3D<T>
 	End
 	
 	Function FromInts:Vector4D<T>(A:Int, B:Int, C:Int, D:Int)
-		Return FromFloats(Float(A), Float(B), Float(C), Float(D))
+		Return New Vector4D<T>(T(A), T(B), T(C), T(D))
 	End
 	
 	Function FromFloats:Vector4D<T>(A:Float, B:Float, C:Float, D:Float)
