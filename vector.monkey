@@ -75,14 +75,26 @@ Public
 
 #VECTOR_ALTERNATE_NEGATE = False ' True
 
-' Imports:
+#If IOELEMENT_IMPLEMENTED
+	#VECTOR_SUPPORT_IOELEMENT = True
+#End
+
+' Imports (Public):
+
+' ImmutableOctet:
+'Import util
+
+#If VECTOR_SUPPORT_IOELEMENT
+	Import ioelement
+#End
+
+' Imports (Private):
+Private
 
 ' BRL:
 Import brl.stream
 
-' ImmutableOctet:
-Import util
-Import ioelement
+Public
 
 ' Global variable(s):
 ' Nothing so far.
@@ -245,7 +257,11 @@ Interface Vector<T>
 End
 
 ' Classes:
-Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
+#If VECTOR_SUPPORT_IOELEMENT
+Class AbstractVector<T> Implements Vector<T>, SerializableElement
+#Else
+Class AbstractVector<T> Implements Vector<T>
+#End
 	' Constant variables:
 	
 	' The position of the 'X' property.
