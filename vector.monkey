@@ -5,6 +5,22 @@ Public
 #Rem
 	TODO:
 		* Change several uses of "Data.Length()" to use the 'Size' property.
+		* Remove the limitation of not being able to offset the internal-data of the active vector properly. (Horribly complicated)
+		
+	COMMAND NAMING CONVENTIONS:
+		* The names of commands (Methods, functions, etc) usually indicate the return value of said command.
+		
+		For example, most commands ending with an underscore ("_"), then the class's "dimension tag" ("2D", "3D", etc) will likely not return a vector object.
+		Whereas a command which does not have an underscore as a seperator will very likely return a vector of some kind (Generated, usually).
+		
+		See commands like the 'Vector2D' class's 'Add2D', and the 'Vector3D' class's 'Rotate_3D' as examples.
+		
+		* Most methods (Unless explicitly stated otherwise) will affect the vector their used from.
+		
+		For example, the 'Add' command found in the 'AbstractVector' class does not produce a vector of any kind.
+		This command only affects its own object's ('Self') data, meaning it will mutate based on the input.
+		
+		However, it will likely not mutate the input itself.
 		
 	GENERAL ARGUMENT NOTES:
 		* When reading the arguments of some of these commands, you'll find some common names.
@@ -57,6 +73,8 @@ Public
 	#VECTOR_NUMBER_SAFETY = False
 #End
 
+#VECTOR_ALTERNATE_NEGATE = False ' True
+
 ' Imports:
 
 ' BRL:
@@ -70,7 +88,7 @@ Import ioelement
 ' Nothing so far.
 
 ' Constant variable(s):
-Const VECTOR_AUTO:Int = -1
+Const VECTOR_AUTO:= UTIL_AUTO
 
 ' Property data-positions:
 Const VECTOR_XPOSITION:= 0
@@ -86,6 +104,13 @@ Interface Vector<T>
 	
 	Const AUTO:= VECTOR_AUTO
 	
+	Const ZERO:= T(0)
+	Const ONE:= T(1)
+	Const TWO:= T(2)
+	
+	Const FULL_ROTATION_IN_DEGREES:= T(360)
+	Const HALF_FULL_ROTATION_IN_DEGREES:= FULL_ROTATION_IN_DEGREES / TWO
+	
 	' Methods (Public):
 	
 	' Conversion commands:
@@ -93,6 +118,14 @@ Interface Vector<T>
 	Method ToString:String(GiveName:Bool, FixErrors:Bool=True)
 	
 	' General purpose commands:
+	Method Clone:Vector<T>()
+	
+	Method Copy:Void(V:Vector<T>, FitVector:Bool)
+	Method Copy:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
+	
+	Method Copy:Void(Info:T[], FitInfo:Bool)
+	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS, FitInfo:Bool=False)
+	
 	Method GetData:T(Index:Int)
 	Method GetData:T[]()
 	
@@ -132,19 +165,55 @@ Interface Vector<T>
 	Method Multiply:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method Multiply:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
-	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
 	Method LinearInterpolation:Void(V:Vector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method LinearInterpolation:Void(A:T[], t:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	
-	Method Normalize:Void()
+	Method Normalize:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method Normalize:Void(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method IsNormalTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method IsNormalTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	
+	Method IsEqualTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method IsEqualTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	
+	Method Distance:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Distance:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	
 	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method DotProductNormalized:T(V:Vector<T>)
 	
-	Method SubtractTowardsZero:Void(Time:T=T(1.0), VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method SubtractTowardsZero:Void(Time:T=ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method ProjectionScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Project:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Project:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	' This is basically the same as 'Multiply'.
+	Method Project:Void(Scalar:T)
+	
+	Method MakeBetween:Vector<T>(V:Vector<T>)
+	
+	Method AngleBetween:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method AngleBetween:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method AngleBetweenCos:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method AngleBetweenCos:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method AngleBetweenSin:T(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method AngleBetweenSin:T(A:T[], TempVector:Vector<T>)
+	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, TempVector:Vector<T>=Null)
+	
+	Method LengthScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method LengthScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
+	Method Normalized:Vector<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+	Method Normalized:Vector<T>(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+	
+	' This does not have to be legitimately implemented.
+	' Even if you were to implement it, it's not going to be efficient.
+	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
 	
 	' Methods (Private):
 	Private
@@ -158,8 +227,11 @@ Interface Vector<T>
 	Public
 	
 	' Properties (Public):
-	Method Data:T[]() Property
 	Method Size:Int() Property
+	
+	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS) Property
+	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
+	Method Length:Void(Value:T) Property
 	
 	Method X:T() Property
 	Method X:Void(Info:T) Property
@@ -167,7 +239,7 @@ Interface Vector<T>
 	' Properties (Private):
 	Private
 	
-	' Nothing so far.
+	Method Data:T[]() Property
 	
 	Public
 End
@@ -175,12 +247,25 @@ End
 ' Classes:
 Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	' Constant variables:
+	
+	' The position of the 'X' property.
 	Const XPOS:= Vector<T>.XPOS
 	
-	Const VECTORSIZE:Int			= 1
+	' The size of this vector-type.
+	Const VECTORSIZE:Int = 1
 	
+	' General:
 	Const AUTO:= VECTOR_AUTO
 	
+	' Number constants:
+	Const ZERO:= Vector<T>.ZERO
+	Const ONE:= Vector<T>.ONE
+	Const TWO:= Vector<T>.TWO
+	
+	Const FULL_ROTATION_IN_DEGREES:= Vector<T>.FULL_ROTATION_IN_DEGREES
+	Const HALF_FULL_ROTATION_IN_DEGREES:= Vector<T>.HALF_FULL_ROTATION_IN_DEGREES
+	
+	' Error template(s):
 	Const VECTOR_GENERIC_ERROR_TEMPLATE:String = "{VECTOR} {ERROR}: "
 	
 	' Defaults:
@@ -239,7 +324,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Assign(Info, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=AUTO)
+	Method New(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS)
 		' Local variable(s):
 		Local FitVector:Bool = False
 		
@@ -250,11 +335,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			FitVector = True
 		Endif
 		
-		' Create the internal container.
+		' Create and manage the internal container:
 		CreateData(Size)
 		
 		' Copy the internal data of 'V'.
-		Assign(V, FitVector)
+		Assign(V, Size, Offset, FitVector)
 	End
 	
 	' Constructor(s) (Private):
@@ -270,34 +355,62 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 
 	' Methods:
 	Method Clone:Vector<T>()
-		Return New AbstractVector<T>(Data)
+		Return CloneAsAbstract()
 	End
 	
-	Method Clone:Void(V:Vector<T>)
-		Assign(V)
+	Method CloneAsAbstract:AbstractVector<T>()
+		Return New AbstractVector<T>(GetData())
+	End
+	
+	Method Clone:Void(V:Vector<T>, FitVector:Bool)
+		Assign(V, FitVector)
 		
 		Return
 	End
 	
-	Method Copy:Void(V:Vector<T>)
-		Clone(V)
+	Method Clone:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
+		Assign(V, Size, Offset, FitVector)
 		
 		Return
 	End
 	
-	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS)
-		Assign(Info, Size, Offset)
+	Method Copy:Void(V:Vector<T>, FitVector:Bool)
+		Clone(V, FitVector)
 		
 		Return
 	End
 	
-	Method Assign:Void(V:Vector<T>, FitVector:Bool=False)
+	Method Copy:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
+		Clone(V, Size, Offset, FitVector)
+		
+		Return
+	End
+	
+	Method Copy:Void(Info:T[], FitInfo:Bool)
+		Copy(Info, AUTO, XPOS, FitInfo)
+		
+		Return
+	End
+	
+	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS, FitInfo:Bool=False)
+		Assign(Info, Size, Offset, FitInfo)
+		
+		Return
+	End
+	
+	Method Assign:Void(V:Vector<T>, FitVector:Bool)
+		Assign(V, AUTO, XPOS, FitVector)
+		
+		Return
+	End
+	
+	Method Assign:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
 		' Check for errors:
 		#If VECTOR_SAFETY
 			If (V = Null) Then Return
 		#End
 		
-		Assign(V.Data, FitVector)
+		Assign(V.Data, Size, Offset, FitVector)
 	
 		Return
 	End
@@ -313,7 +426,8 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			Size = Info.Length()
 		Endif
 		
-		Self.Data = GenericUtilities<T>.CopyArray(Info, Self.Data, FitInfo)
+		'Self.Data = GenericUtilities<T>.CopyArray(Info, Self.Data, FitInfo)
+		Self.Data = GenericUtilities<T>.CopyArray(Info, Self.Data, Offset, XPOS, Size, AUTO, FitInfo)
 		
 		'AssignByRef(Info.Resize(Size))
 		
@@ -465,7 +579,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[I] = NIL ' T(0)
+			Data[I] = NIL ' ZERO
 		Next
 		
 		Return
@@ -495,7 +609,11 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[I] = -Data[I]
+			#If Not VECTOR_ALTERNATE_NEGATE
+				Data[I] = -Data[I]
+			#Else
+				Data[I] *= -1
+			#End
 		Next
 		
 		Return
@@ -635,7 +753,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			VData_Length = VData_RawLength
 		Endif
 		
-		Local VelocityLength:Float = Length()
+		Local VelocityLength:= Length()
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
 			If (Data[Index] > 0.0) Then
@@ -716,7 +834,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 				#If VECTOR_NUMBER_SAFETY
 					If (A_On_Index <> NIL) Then
 				#End
-						Data[Index] *= (T(1.0)/A_On_Index)
+						Data[Index] *= (ONE/A_On_Index)
 				#If VECTOR_NUMBER_SAFETY
 					Else
 						Data[Index] = NIL
@@ -733,7 +851,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 			#If VECTOR_NUMBER_SAFETY
 				If (F <> NIL) Then
 			#End
-					Multiply(T(1.0)/F, VData_Length, VData_Offset)
+					Multiply(ONE/F, VData_Length, VData_Offset)
 			#If VECTOR_NUMBER_SAFETY
 				Else
 					Zero(VData_Length, VData_Offset)
@@ -791,23 +909,6 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Return
 	End
 	
-	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
-		
-		If (VData_Length = AUTO) Then
-			VData_Length = VData_RawLength
-		Endif
-		
-		Local Sum:T = NIL
-		
-		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Sum += Data[Index]*Data[Index] ' Pow(..., 2)
-		Next
-		
-		Return Sqrt(Sum)
-	End
-	
 	Method LinearInterpolation:Void(V:Vector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		LinearInterpolation(V.Data, t, VData_Length, VData_Offset)
 		
@@ -823,7 +924,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		#If VECTOR_NUMBER_SAFETY
-			t = Clamp(t, T(0.0), T(1.0))
+			t = Clamp(t, ZERO, ONE)
 		#End
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
@@ -833,8 +934,8 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Return
 	End
 	
-	Method Normalize:Void()
-		Normalize(Length())
+	Method Normalize:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Normalize(Length(), VData_Length, VData_Offset)
 		
 		Return
 	End
@@ -845,6 +946,60 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		Endif
 		
 		Return
+	End
+	
+	Method IsNormalTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return IsNormalTo(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method IsNormalTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		Return (DotProduct(A, A_Length, A_Offset) = ZERO)
+	End
+	
+	Method IsEqualTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return IsEqualTo(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method IsEqualTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		' Local variable(s):
+		Local A_RawLength:= A.Length()
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+			' Check if the two elements are equal:
+			If (A[Index] <> Data[Index]) Then
+				' The elements are not equal, return a negative response.
+				Return False
+			Endif
+		End
+		
+		' Return the default response.
+		Return True
+	End
+	
+	Method Distance:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return Distance(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method Distance:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		' Local variable(s):
+		Local D:T = ZERO
+		
+		' Local variable(s):
+		Local A_RawLength:= A.Length()
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+			D += Pow(A[Index]-Data[Index], TWO)
+		Next
+		
+		Return Sqrt(D)
 	End
 	
 	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -869,25 +1024,54 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	End
 	
 	Method DotProductNormalized:T(V:Vector<T>)
-		' Local variable(s):
-		Local Result:T
-		
-		Local V1:= New AbstractVector<T>(Self)
-		Local V2:= New AbstractVector<T>(V)
-		
-		V1.Normalize()
-		V2.Normalize()
-		
-		Result = V1.DotProduct(V2)
-		
-		V1 = Null
-		V2 = Null
-		
-		' Return the result variable.
-		Return Result
+		Return DotProductNormalized(V, Null, Null)
 	End
 	
-	Method SubtractTowardsZero:Void(Time:T=T(1.0), VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	#Rem
+		ARGUMENT NOTES:
+			* The 'FTV' and 'STV' arguments stand for "First Temporary Vector" and "Second Temporary Vector".
+			Effectively, if you send in one or both vectors, the data of 'V' and this object will be copied to them.
+			
+			So, if you don't want an object to be generated, you should give this pre-allocated vectors of some kind.
+	
+			Those temporary vectors should be either able to be resized which needed (The standard implementations here do this),
+			or they'll need to be the same sizes as the associated vectors.
+			
+			* The 'V_Length' and 'V_Offset' arguments are referring to the 'V' argument.
+			* The 'VData_Length' and 'VData_Offset' arguments are referring to the current vector (Self).
+	#End
+	
+	Method DotProductNormalized:T(V:Vector<T>, FTV:Vector<T>, STV:Vector<T>, V_Length:Int=AUTO, V_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		If (V_Length = AUTO) Then
+			V_Length = V.Size
+		Endif
+		
+		' Local variable(s):
+		Local Size:= Self.Size
+		
+		Local STV_Length:= Min(V_Length, Size)
+		Local STV_Offset:= Min(V_Offset, Size)
+		
+		If (FTV = Null) Then
+			FTV = New AbstractVector<T>(Self, VData_Length, VData_Offset)
+		Else
+			FTV.Copy(Self, VData_Length, VData_Offset)
+		Endif
+		
+		If (STV = Null) Then
+			STV = New AbstractVector<T>(V, STV_Length, STV_Offset)
+		Else
+			STV.Copy(V, STV_Length, STV_Offset)
+		Endif
+		
+		FTV.Normalize(VData_Length, VData_Offset)
+		STV.Normalize()
+		
+		' Return the calculated result.
+		Return FTV.DotProduct(STV)
+	End
+	
+	Method SubtractTowardsZero:Void(Time:T=ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
 		Local VData_RawLength:= Data.Length()
 		
@@ -897,18 +1081,124 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 		
 		' Ensure we have a valid delta.
 		#If VECTOR_NUMBER_SAFETY
-			Time = Clamp(Time, T(0), T(1))
+			Time = Clamp(Time, ZERO, ONE)
 		#End
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			If (Data[I] > T(0)) Then
-				Data[I] = Max(Data[I]-(Data[I]*Time), T(0))
+			If (Data[I] > ZERO) Then
+				Data[I] = Max(Data[I]-(Data[I]*Time), ZERO)
 			Else
-				Data[I] = Min(Data[I]-(Data[I]*Time), T(0))
+				Data[I] = Min(Data[I]-(Data[I]*Time), ZERO)
 			Endif
 		Next
 		
 		Return
+	End
+	
+	Method ProjectionScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return ProjectionScalar(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return (DotProduct(A, A_Length, A_Offset) / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+	End
+	
+	Method Project:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Project(ProjectionScalar(V, VData_Length, VData_Offset))
+		
+		Return
+	End
+	
+	Method Project:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Project(ProjectionScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		
+		Return
+	End
+	
+	Method Project:Void(Scalar:T)
+		Multiply(Scalar)
+		
+		Return
+	End
+	
+	Method MakeBetween:Vector<T>(V:Vector<T>)
+		' Local variable(s):
+		
+		' Generate a new vector.
+		Local VOUT:= Clone()
+		
+		VOUT.Subtract(V)
+		
+		' Return the output-vector.
+		Return VOUT
+	End
+	
+	Method AngleBetween:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return AngleBetween(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetween:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return ACos(AngleBetweenCos(A, A_Length, A_Offset, VData_Length, VData_Offset))
+	End
+	
+	Method AngleBetweenCos:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return AngleBetweenCos(V.Data, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetweenCos:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return AngleBetween_TransformProduct(DotProduct(A, A_Length, A_Offset), A, A_Length, A_Offset, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetweenSin:T(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return AngleBetween_TransformProduct(CrossProduct(V).X, V.Data, AUTO, XPOS, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetweenSin:T(A:T[], TempVector:Vector<T>)
+		Return AngleBetweenSin(A, AUTO, XPOS, AUTO, XPOS, TempVector)
+	End
+	
+	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, TempVector:Vector<T>=Null)
+		If (TempVector = Null) Then
+			TempVector = New AbstractVector(A, A_Length, A_Offset)
+		Else
+			TempVector.Copy(A, A_Length, A_Offset)
+		Endif
+		
+		Return AngleBetween_TransformProduct(CrossProduct(TempVector).X, A, A_Length, A_Offset, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetween_TransformProduct:T(Product:T, A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return (Product / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+	End
+	
+	Method LengthScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return LengthScalar(V, VData_Length, VData_Offset)
+	End
+	
+	Method LengthScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return (Length(VData_Length, VData_Offset) * Length(A, A_Length, A_Offset))
+	End
+	
+	Method Normalized:Vector<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		Return Normalized(Length(VData_Length, VData_Offset), VData_Length, VData_Offset, OutputVector)
+	End
+	
+	Method Normalized:Vector<T>(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		If (OutputVector = Null) Then
+			OutputVector = Clone()
+		Else
+			OutputVector.Copy(Self, VData_Length, VData_Offset)
+		Endif
+		
+		' Normalize the targeted vector.
+		OutputVector.Normalize(Length, VData_Length, VData_Offset)
+		
+		' Return the output-vector.
+		Return OutputVector
+	End
+	
+	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+		Return Null
 	End
 	
 	Method ToString:String()
@@ -999,6 +1289,48 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement ' Abstract
 	Method X:Void(Info:T) Property
 		SetData(XPOS, Info)
 	
+		Return
+	End
+	
+	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS) Property
+		Return Length(Self.Data, VData_Length, VData_Offset)
+	End
+	
+	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
+		' Local variable(s):
+		Local A_RawLength:= A.Length()
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		Local Sum:T = NIL
+		
+		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+			Sum += A[Index]*A[Index] ' Pow(A[Index], TWO)
+		Next
+		
+		Return Sqrt(Sum)
+	End
+	
+	Method Length:Void(Value:T) Property
+		' Local variable(s):
+		Local Length:= Self.Length
+		
+		If (Value = NIL) Then
+			Zero()
+			
+			Return
+		Endif
+		
+		If (Length > ZERO) Then
+			Multiply(Value / Length)
+		Else
+			Zero()
+			
+			X = Value
+		Endif
+		
 		Return
 	End
 	
@@ -1177,8 +1509,8 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
-		Super.New(V, Size)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+		Super.New(V, Size, Offset)
 	End
 	
 	Method New(X:T, Y:T, VECTORSIZE:Int=Vector2D<T>.VECTORSIZE)
@@ -1197,85 +1529,258 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return New Vector2D<T>(GetData())
 	End
 	
-	Method Perpendicular:Vector2D<T>()
-		Local V:= New Vector2D<T>()
+	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+		' Local variable(s):
+		Local V2D:= Vector2D<T>(V)
+		Local V2DOut:Vector2D<T>
 		
-		V.AsPerpendicular(X, Y)
+		#If VECTOR_SAFETY
+			If (V2D = Null) Then
+				Return Null
+			Endif
+		#End
 		
-		Return V
+		#If VECTOR_SAFETY
+			If (VOUT <> Null) Then
+		#End
+				V2DOut = Vector2D<T>(VOUT)
+				
+				#If VECTOR_SAFETY
+					If (V2DOut = Null) Then
+						Return Null
+					Endif
+				#End
+		#If VECTOR_SAFETY
+			Endif
+		#End
+		
+		' Call the main implementation.
+		Return CrossProduct2D(V2D, V2DOut)
 	End
 	
-	Method AsPerpendicular:Void(V:Vector2D<T>)
-		AsPerpendicular(V.X, V.Y)
+	Method CrossProduct2D:Vector2D<T>(V:Vector2D<T>, VOUT:Vector2D<T>=Null)
+		If (VOUT = Null) Then
+			VOUT = New Vector2D<T>(Self)
+		Else
+			VOUT.Copy(Self)
+		Endif
+		
+		' Local variable(s):
+		VOUT.X = VOUT.CrossProduct_2D(V)
+		
+		Return VOUT
+	End
+	
+	Method CrossProduct_2D:T(V:Vector2D<T>, VData_Offset:Int=XPOS)
+		Return CrossProduct_2D(V.Data, VData_Offset)
+	End
+	
+	Method CrossProduct_2D:T(A:T[], A_Offset:Int=XPOS)
+		' Local variable(s):
+		Local REAL_X:= XPOS+A_Offset
+		Local REAL_Y:= YPOS+A_Offset
+		
+		#If VECTOR_SAFETY
+			If (OutOfBounds(Max(REAL_X, REAL_Y), A.Length())) Then
+				Return NIL
+			Endif
+		#End
+		
+		Return (X*A[REAL_Y] - Y*A[REAL_X])
+	End
+	
+	Method RotateTowards:Void(V:Vector2D<T>)
+		Rotate(CrossProduct_2D(V))
 		
 		Return
+	End
+	
+	Method Rotate:Void(Angle:T)
+		' Local variable(s):
+		Local Length:= Self.Length()
+		
+		X = Length * Cos(Angle)
+		Y = Length * Sin(Angle)
+		
+		Return
+	End
+	
+	Method AngleTo:T(V:Vector2D<T>)
+		Return AngleTo_2D(V)
+	End
+	
+	Method AngleTo_2D:T(V:Vector2D<T>)
+		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Y - V.Y, X - V.X)
+	End
+	
+	Method AngleBetweenSin:T(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		Return Super.AngleBetweenSin(V, VData_Length, VData_Offset)
+	End
+	
+	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, UNUSED_TEMPVECTOR_ARG:Vector<T>=Null)
+		Return AngleBetween_TransformProduct(CrossProduct_2D(A, A_Offset), A, A_Length, A_Offset, VData_Length, VData_Offset)
+	End
+	
+	Method Perpendicular:Vector2D<T>()
+		' Local variable(s):
+		
+		' Generate a new 2D vector.
+		Local VOUT:= CloneAs2D()
+		
+		' Rotate the vector.
+		VOUT.AsPerpendicular()
+		
+		' Return the output-vector.
+		Return VOUT
+	End
+	
+	Method ReversePerpendicular:Vector2D<T>()
+		' Local variable(s):
+		
+		' Generate a new 2D vector.
+		Local VOUT:= CloneAs2D()
+		
+		' Rotate the vector.
+		VOUT.AsReversePerpendicular()
+		
+		' Return the output-vector.
+		Return VOUT
+	End
+	
+	Method LeftNormal:Vector2D<T>()
+		Return Perpendicular()
+	End
+	
+	Method RightNormal:Vector2D<T>()
+		Return ReversePerpendicular()
 	End
 	
 	Method AsPerpendicular:Void()
-		'AsPerpendicular(X, Y)
-		AsPerpendicular(-Y, X)
+		' Local variable(s):
+		Local X:= Self.X
 		
-		Return
-	End
-	
-	Method AsPerpendicular:Void(X:T, Y:T)
 		Self.X = -Y
 		Self.Y = X
+	End
+	
+	Method AsReversePerpendicular:Void()
+		' Local variable(s):
+		Local X:= Self.X
+		
+		Self.X = Y
+		Self.Y = -X
 		
 		Return
 	End
 	
-	'#Rem
-	Method ReversePerpendicular:Void(V:Vector2D<T>)
-		ReversePerpendicular(V.X, V.Y)
+	Method AsLeftNormal:Void()
+		AsPerpendicular()
 		
 		Return
 	End
 	
-	Method ReversePerpendicular:Void()
-		ReversePerpendicular(X, Y)
+	Method AsRightNormal:Void()
+		AsReversePerpendicular()
 		
 		Return
 	End
-	
-	Method ReversePerpendicular:Void(X:T, Y:T)
-		Self.X = -X
-		Self.Y = Y
-		
-		Return
-	End
-	'#End
 	
 	Method Add2D:Vector2D<T>(V:Vector<T>)
-		Local VOut:= (New Vector2D<T>(Self))
+		' Local variable(s):
+		Local VOut:= CloneAs2D()
 		
+		' Add the two vectors together.
 		VOut.Add(V)
 		
+		' Return the output-vector.
 		Return VOut
 	End
 	
 	Method Subtract2D:Vector2D<T>(V:Vector<T>)
-		Local VOut:= (New Vector2D<T>(Self))
+		' Local variable(s):
+		Local VOut:= CloneAs2D()
 		
+		' Subtract the input-vector from the generated vector.
 		VOut.Subtract(V)
 		
+		' Return the output-vector.
 		Return VOut
 	End
 	
+	Method MakeBetween2D:Vector2D<T>(V:Vector2D<T>)
+		Return Vector2D<T>(MakeBetween(V))
+	End
+	
 	Method Divide2D:Vector2D<T>(V:Vector<T>)
-		Local VOut:= (New Vector2D<T>(Self))
+		' Local variable(s):
+		Local VOut:= CloneAs2D()
 		
+		' Divide the generated vector by the input-vector.
 		VOut.Divide(V)
 		
+		' Return the output-vector.
 		Return VOut
 	End
 	
 	Method Multiply2D:Vector2D<T>(V:Vector<T>)
-		Local VOut:= (New Vector2D<T>(Self))
+		' Local variable(s):
+		Local VOut:= CloneAs2D()
 		
+		' Multiply the generated vector by the input-vector.
 		VOut.Multiply(V)
 		
+		' Return the output-vector.
 		Return VOut
+	End
+	
+	Method Rotate2D:Vector2D<T>(Angle:T)
+		' Local variable(s):
+		Local VOut:= CloneAs2D()
+		
+		' Rotate the generated vector by the angle specified.
+		VOut.Rotate(Angle)
+		
+		' Return the output-vector.
+		Return VOut
+	End
+	
+	Method Project2D:Vector2D<T>(V:Vector2D<T>, Output:Vector2D<T>=Null)
+		Return Project2D(V, AUTO, XPOS, Output)
+	End
+	
+	Method Project2D:Vector2D<T>(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, Output:Vector2D<T>=Null)
+		' Check for error(s):
+		#If VECTOR_SAFETY
+			If (V = Null) Then
+				Return Null
+			Endif
+		#End
+		
+		If (Output = Null) Then
+			Output = New Vector2D<T>(V)
+		Else
+			Output.Copy(V)
+		Endif
+		
+		' Local variable(s):
+		
+		' Calculate the projection scalar.
+		Local Scalar:= Output.ProjectionScalar(V, VData_Length, VData_Offset)
+		
+		' Apply the projection.
+		Output.Project(Scalar)
+		
+		' Return the output-vector.
+		Return Output
+	End
+	
+	Method Normalized2D:Vector2D<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		Return Normalized2D(Length(VData_Length, VData_Offset), VData_Length, VData_Offset, OutputVector)
+	End
+	
+	Method Normalized2D:Vector2D<T>(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		' Call the main implementation.
+		Return Vector2D<T>(Normalized(Length, VData_Length, VData_Offset, OutputVector))
 	End
 	
 	Method ToString:String()
@@ -1313,6 +1818,20 @@ Class Vector2D<T> Extends AbstractVector<T>
 	Public
 	
 	' Properties (Public):
+	Method Angle:T() Property
+		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(-Y, -X)
+	End
+	
+	Method Angle:Void(Input:T) Property
+		' Local variable(s):
+		Local Length:= Self.Length()
+		
+		X = Length * Cos(Input)
+		Y = Length * -Sin(Input)
+		
+		Return
+	End
+	
 	Method G:T() Property
 		Return Y()
 	End
@@ -1400,8 +1919,8 @@ Class Vector3D<T> Extends Vector2D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
-		Super.New(V, Size)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+		Super.New(V, Size, Offset)
 	End
 	
 	Method New(X:T, Y:T, Z:T=NIL, VECTORSIZE:Int=Vector3D<T>.VECTORSIZE)
@@ -1412,17 +1931,166 @@ Class Vector3D<T> Extends Vector2D<T>
 	
 	' Methods:
 	Method Clone:Vector<T>()
+		Return CloneAs3D()
+	End
+	
+	Method CloneAs3D:Vector3D<T>()
 		Return New Vector3D<T>(GetData())
 	End
 	
-	Method CrossProduct:Vector3D<T>(V:Vector3D<T>, VOUT:Vector3D<T>=Null)
-		If (VOUT = Null) Then VOUT = New Vector3D<T>()
+	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+		' Local variable(s):
+		Local V3D:= Vector3D<T>(V)
+		Local V3DOut:Vector3D<T>
+		
+		#If VECTOR_SAFETY
+			If (V3D = Null) Then
+				Return Null
+			Endif
+		#End
+		
+		#If VECTOR_SAFETY
+			If (VOUT <> Null) Then
+		#End
+				V3DOut = Vector3D<T>(VOUT)
 				
-		VOUT.X = Y*V.Z - Z*V.Y
-		VOUT.Y = Z*V.X - X*V.Z
-		VOUT.Z = X*V.Y - Y*V.X
+				#If VECTOR_SAFETY
+					If (V3DOut = Null) Then
+						Return Null
+					Endif
+				#End
+		#If VECTOR_SAFETY
+			Endif
+		#End
+		
+		' Call the main implementation.
+		Return CrossProduct3D(V3D, V3DOut)
+	End
+	
+	Method CrossProduct3D:Vector3D<T>(V:Vector3D<T>, VOUT:Vector3D<T>=Null)
+		If (VOUT = Null) Then
+			VOUT = New Vector3D<T>(Self)
+		Else
+			VOUT.Copy(Self)
+		Endif
+		
+		VOUT.CrossProduct_3D(V)
 		
 		Return VOUT
+	End
+	
+	Method CrossProduct_3D:Void(V:Vector3D<T>)
+		' Local variable(s):
+		
+		' Cache the internal-data locally:
+		Local X:= Self.X
+		Local Y:= Self.Y
+		Local Z:= Self.Z
+		
+		' Calculate the product:
+		Self.X = Y*V.Z - Z*V.Y
+		Self.Y = Z*V.X - X*V.Z
+		Self.Z = X*V.Y - Y*V.X
+		
+		Return
+	End
+	
+	Method MakeBetween3D:Vector3D<T>(V:Vector3D<T>)
+		Return Vector3D<T>(MakeBetween(V))
+	End
+	
+	Method RotateTowards:Void(V:Vector2D<T>)
+		' Local variable(s):
+		
+		' Check if the input was a 'Vector3D'.
+		Local V3D:= Vector3D<T>(V)
+		
+		If (V3D <> Null) Then
+			RotateTowards_3D(V3D)
+		Else
+			Local Product:= CrossProduct_2D(V)
+			
+			Rotate_2DIn3D(Cos(Product), Sin(Product))
+		Endif
+		
+		Return
+	End
+	
+	Method Rotate:Void(Angle:T)
+		Rotate_2DIn3D(Cos(Angle), Sin(Angle))
+		
+		Return
+	End
+	
+	Method Rotate_2DIn3D:Void(V:Vector2D<T>)
+		Rotate_2DIn3D(V.X, V.Y)
+		
+		Return
+	End
+	
+	Method Rotate_2DIn3D:Void(RX:T, RY:T)
+		Rotate_2DIn3D(RX, RY, Length())
+		
+		Return
+	End
+	
+	Method Rotate_2DIn3D:Void(RX:T, RZ:T, Length:T)
+		X = Length * RX
+		Z = Length * RZ
+		
+		Return
+	End
+	
+	Method Rotate_3D:Void(RX:T, RY:T, RZ:T)
+		Rotate_3D(RX, RY, RZ, Length())
+		
+		Return
+	End
+	
+	Method Rotate_3D:Void(RX:T, RY:T, RZ:T, Length:T)
+		Rotate_2DIn3D(RX, RZ, Length)
+		
+		Y = Length * RY
+		
+		Return
+	End
+	
+	Method Rotate_3D:Void(R:Vector3D<T>)
+		Rotate_3D(R.X, R.Y, R.Z)
+		
+		Return
+	End
+	
+	Method RotateTowards_3D:Void(V:Vector3D<T>, TempVector:Vector3D<T>=Null)
+		Rotate_3D(Vector3D<T>(CrossProduct(V, TempVector)))
+		
+		Return
+	End
+	
+	Method AngleTo:T(V:Vector2D<T>)
+		' Local variable(s):
+		
+		' Check if the input was a 'Vector3D'.
+		Local V3D:= Vector3D<T>(V)
+		
+		If (V3D <> Null) Then
+			Return AngleTo_3D(V3D)
+		Endif
+		
+		Return AngleTo_2D(V)
+	End
+	
+	Method AngleTo_3D:T(V:Vector3D<T>)
+		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Z - V.Z, X - V.X)
+	End
+	
+	Method Normalized3D:Vector3D<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		Return Normalized3D(Length(VData_Length, VData_Offset), VData_Length, VData_Offset, OutputVector)
+	End
+	
+	Method Normalized3D:Vector3D<T>(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
+		' Call the main implementation.
+		Return Vector3D<T>(Normalized(Length, VData_Length, VData_Offset, OutputVector))
 	End
 	
 	Method ToString:String()
@@ -1469,6 +2137,16 @@ Class Vector3D<T> Extends Vector2D<T>
 	' Nothing so far.
 End
 
+#Rem
+	IMPLEMENTATION NOTES:
+		* This class and classes based on this aren't exactly mathematical in nature.
+		You can use this with most (If not all) of the usual mathematical commands,
+		however, this does not support aliases for vector generation.
+		
+		* This class is mainly for things like color-data, and other less mathematical uses.
+		But, that doesn't mean it won't support such things.
+#End
+
 Class Vector4D<T> Extends Vector3D<T>
 	' Constant variables:
 	Const APOS:Int = XPOS
@@ -1513,8 +2191,8 @@ Class Vector4D<T> Extends Vector3D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE)
-		Super.New(V, Size)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+		Super.New(V, Size, Offset)
 	End
 	
 	Method New(A:T, B:T, C:T=NIL, D:T=NIL, VECTORSIZE:Int=Vector4D<T>.VECTORSIZE)
@@ -1525,7 +2203,15 @@ Class Vector4D<T> Extends Vector3D<T>
 
 	' Methods:
 	Method Clone:Vector<T>()
+		Return CloneAs4D()
+	End
+	
+	Method CloneAs4D:Vector4D<T>()
 		Return New Vector4D<T>(GetData())
+	End
+	
+	Method MakeBetween4D:Vector4D<T>(V:Vector4D<T>)
+		Return Vector4D<T>(MakeBetween(V))
 	End
 	
 	Method ToString:String()
@@ -1639,8 +2325,8 @@ Class ManualVector<T> Extends Vector4D<T>
 		Super.New(Info, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=AUTO)
-		Super.New(V, Size)
+	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+		Super.New(V, Size, Offset)
 	End
 	
 	#Rem
@@ -1657,6 +2343,10 @@ Class ManualVector<T> Extends Vector4D<T>
 	
 	' Methods:
 	Method Clone:Vector<T>()
+		Return CloneAsManualVector()
+	End
+	
+	Method CloneAsManualVector:ManualVector<T>()
 		Return New ManualVector<T>(GetData())
 	End
 	
@@ -1794,6 +2484,6 @@ Class ManualVector<T> Extends Vector4D<T>
 End
 
 ' Functions:
-Function DotProductNormalized:Float(V1:AbstractVector<Float>, V2:AbstractVector<Float>)
+Function DotProductNormalized:Float(V1:Vector<Float>, V2:Vector<Float>)
 	Return AbstractVector<Float>.DotProductNormalized(V1, V2)
 End
