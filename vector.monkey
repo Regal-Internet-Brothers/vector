@@ -82,7 +82,7 @@ Public
 ' Imports (Public):
 
 ' ImmutableOctet:
-'Import util
+Import util
 
 #If VECTOR_SUPPORT_IOELEMENT
 	Import ioelement
