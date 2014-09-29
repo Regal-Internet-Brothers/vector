@@ -375,7 +375,7 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method CloneAsAbstract:AbstractVector<T>()
-		Return New AbstractVector<T>(GetData())
+		Return New AbstractVector<T>(Self)
 	End
 	
 	Method Clone:Void(V:Vector<T>, FitVector:Bool)
@@ -1063,11 +1063,13 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		' Local variable(s):
-		Local Size:= Self.Size
+		Local Size:= Min(Self.Size, V.Size)
 		
+		' Calculate the length and offset for 'STV':
 		Local STV_Length:= Min(V_Length, Size)
 		Local STV_Offset:= Min(V_Offset, Size)
 		
+		' Generate or mutate the two vectors:
 		If (FTV = Null) Then
 			FTV = New AbstractVector<T>(Self, VData_Length, VData_Offset)
 		Else
@@ -1080,8 +1082,9 @@ Class AbstractVector<T> Implements Vector<T>
 			STV.Copy(V, STV_Length, STV_Offset)
 		Endif
 		
+		' Normalize the two vectors:
 		FTV.Normalize(VData_Length, VData_Offset)
-		STV.Normalize()
+		STV.Normalize(STV_Length, STV_Offset)
 		
 		' Return the calculated result.
 		Return FTV.DotProduct(STV)
@@ -1320,7 +1323,7 @@ Class AbstractVector<T> Implements Vector<T>
 			A_Length = A_RawLength
 		Endif
 		
-		Local Sum:T = NIL
+		Local Sum:T = ZERO
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
 			Sum += A[Index]*A[Index] ' Pow(A[Index], TWO)
@@ -1542,7 +1545,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method CloneAs2D:Vector2D<T>()
-		Return New Vector2D<T>(GetData())
+		Return New Vector2D<T>(Self)
 	End
 	
 	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
@@ -1951,7 +1954,7 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	Method CloneAs3D:Vector3D<T>()
-		Return New Vector3D<T>(GetData())
+		Return New Vector3D<T>(Self)
 	End
 	
 	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
@@ -2223,7 +2226,7 @@ Class Vector4D<T> Extends Vector3D<T>
 	End
 	
 	Method CloneAs4D:Vector4D<T>()
-		Return New Vector4D<T>(GetData())
+		Return New Vector4D<T>(Self)
 	End
 	
 	Method MakeBetween4D:Vector4D<T>(V:Vector4D<T>)
@@ -2363,7 +2366,7 @@ Class ManualVector<T> Extends Vector4D<T>
 	End
 	
 	Method CloneAsManualVector:ManualVector<T>()
-		Return New ManualVector<T>(GetData())
+		Return New ManualVector<T>(Self)
 	End
 	
 	Method Index:T[]()
