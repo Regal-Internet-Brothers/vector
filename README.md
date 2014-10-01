@@ -14,5 +14,5 @@ The standard vector module for most Monkey X code publicly available from both t
 * [V. Lehtinen's vector implementation](http://www.monkey-x.com/Community/posts.php?topic=8998)
 
 **Documentation notes:**
-* Anything entries offset from the current entry by one 'TAB' character will act as a requirement for the entry one step above. If no sub-entries are present, then either there aren't extra requirements, or there isn't sufficient documentation.
+* Any entries offset from the current entry by one 'TAB' character will act as a requirement for the entry one step above. If no sub-entries are present, then either there aren't extra requirements, or there isn't sufficient documentation.
 * If a sub-entry is described as explicitly optional (Or required), that notation will take priority. This also goes for instances where entire sections are defined as optional or required.
