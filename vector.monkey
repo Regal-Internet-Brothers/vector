@@ -79,6 +79,8 @@ Public
 	#VECTOR_SUPPORT_IOELEMENT = True
 #End
 
+#VECTOR_ALLOW_SERIALIZATION = True
+
 ' Imports (Public):
 
 ' ImmutableOctet:
@@ -92,7 +94,9 @@ Import util
 Private
 
 ' BRL:
-Import brl.stream
+#If VECTOR_ALLOW_SERIALIZATION
+	Import brl.stream
+#End
 
 Public
 
@@ -951,7 +955,7 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method Normalize:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		Normalize(Length(), VData_Length, VData_Offset)
+		Normalize(Length(VData_Length, VData_Offset), VData_Length, VData_Offset)
 		
 		Return
 	End
@@ -1232,45 +1236,47 @@ Class AbstractVector<T> Implements Vector<T>
 		Return Name()
 	End
 	
-	Method Load:Bool(S:Stream)
-		Return Read(S)
-	End
-	
-	Method Save:Bool(S:Stream)
-		Return Write(S)
-	End
-	
-	Method Read:Bool(S:Stream, ReadSize:Int=0)
-		' Check for errors:
-		#If VECTOR_SAFETY
-			If (S = Null Or S.Eof()) Then
-				Return False
+	#If VECTOR_ALLOW_SERIALIZATION
+		Method Load:Bool(S:Stream)
+			Return Read(S)
+		End
+		
+		Method Save:Bool(S:Stream)
+			Return Write(S)
+		End
+		
+		Method Read:Bool(S:Stream, ReadSize:Int=0)
+			' Check for errors:
+			#If VECTOR_SAFETY
+				If (S = Null Or S.Eof()) Then
+					Return False
+				Endif
+			#End
+			
+			If (ReadSize = 0) Then
+				ReadSize = Self.Data.Length()
 			Endif
-		#End
+			
+			GenericUtilities<T>.Read(S, Self.Data, ReadSize)
+			
+			' Return the default response.
+			Return True
+		End
 		
-		If (ReadSize = 0) Then
-			ReadSize = Self.Data.Length()
-		Endif
-		
-		GenericUtilities<T>.Read(S, Self.Data, ReadSize)
-		
-		' Return the default response.
-		Return True
-	End
-	
-	Method Write:Bool(S:Stream, WriteSize:Bool=False)
-		' Check for errors:
-		#If VECTOR_SAFETY
-			If (S = Null) Then
-				Return False
-			Endif
-		#End
-		
-		GenericUtilities<T>.Write(S, Self.Data, WriteSize)
-		
-		' Return the default response.
-		Return True
-	End
+		Method Write:Bool(S:Stream, WriteSize:Bool=False)
+			' Check for errors:
+			#If VECTOR_SAFETY
+				If (S = Null) Then
+					Return False
+				Endif
+			#End
+			
+			GenericUtilities<T>.Write(S, Self.Data, WriteSize)
+			
+			' Return the default response.
+			Return True
+		End
+	#End
 	
 	' Properties (Public):
 	Method Value:T() Property
