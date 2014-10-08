@@ -101,7 +101,13 @@ Private
 Public
 
 ' Global variable(s):
-' Nothing so far.
+
+' Class name-string instances:
+Global AbstractVector_Name_Str:String = "Vector (Abstract)"
+Global Vector2D_Name_Str:String = "Vector(2D)"
+Global Vector3D_Name_Str:String = "Vector(3D)"
+Global Vector4D_Name_Str:String = "Vector(4D)"
+Global ManualVector_Name_Str:String = "Vector"
 
 ' Constant variable(s):
 Const VECTOR_AUTO:= UTIL_AUTO
@@ -185,7 +191,7 @@ Interface Vector<T>
 	Method LinearInterpolation:Void(A:T[], t:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	
 	Method Normalize:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Normalize:Void(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Normalize:Void(Length:T, VData_Length:Int, VData_Offset:Int)
 	
 	Method IsNormalTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method IsNormalTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
@@ -195,6 +201,10 @@ Interface Vector<T>
 	
 	Method Distance:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method Distance:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	
+	' This is effectively an alias for 'Add'.
+	' The return value is the amount possible. (Usually the same as the input)
+	Method Offset:T(Amount:T)
 	
 	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
@@ -245,7 +255,10 @@ Interface Vector<T>
 	' Properties (Public):
 	Method Size:Int() Property
 	
-	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS) Property
+	' This isn't based on default arguments due to issues with the type of 'T'.
+	Method Length:T() Property
+	
+	Method Length:T(VData_Length:Int, VData_Offset:Int) Property
 	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
 	Method Length:Void(Value:T) Property
 	
@@ -300,7 +313,7 @@ Class AbstractVector<T> Implements Vector<T>
 	Global NIL:T
 	
 	' The name of this class.
-	Global Name_Str:String = "Vector (Abstract)"
+	Global Name_Str:= AbstractVector_Name_Str
 	
 	' Defaults:
 	
@@ -777,9 +790,9 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
 			If (Data[Index] > 0.0) Then
-				Data[Index] = Max(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), 0.0)
+				Data[Index] = Max(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), ZERO)
 			Else
-				Data[Index] = Min(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), 0.0)
+				Data[Index] = Min(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), ZERO)
 			Endif
 		Next
 		
@@ -960,7 +973,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Return
 	End
 	
-	Method Normalize:Void(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method Normalize:Void(Length:T, VData_Length:Int, VData_Offset:Int)
 		If (Length <> NIL) Then
 			Divide(Length, VData_Length, VData_Offset)
 		Endif
@@ -1020,6 +1033,12 @@ Class AbstractVector<T> Implements Vector<T>
 		Next
 		
 		Return Sqrt(D)
+	End
+	
+	Method Offset:T(Amount:T)
+		Add(Amount)
+		
+		Return Amount
 	End
 	
 	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1317,7 +1336,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Return
 	End
 	
-	Method Length:T(VData_Length:Int=AUTO, VData_Offset:Int=XPOS) Property
+	Method Length:T() Property
+		Return Length(AUTO, XPOS)
+	End
+	
+	Method Length:T(VData_Length:Int, VData_Offset:Int) Property
 		Return Length(Self.Data, VData_Length, VData_Offset)
 	End
 	
@@ -1502,7 +1525,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	' Global variable(s):
 	
 	' The name of this class.
-	Global Name_Str:String = "Vector(2D)"
+	Global Name_Str:= Vector2D_Name_Str
 
 	' Functions:
 	Function Name:String()
@@ -1857,6 +1880,15 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return
 	End
 	
+	' This is mainly used for ratios.
+	Method Delta_1D:T() Property
+		Return (Y-X)
+	End
+	
+	Method Distance_1D:T() Property
+		Return Abs(Delta_1D)
+	End
+	
 	Method G:T() Property
 		Return Y()
 	End
@@ -1912,8 +1944,8 @@ Class Vector3D<T> Extends Vector2D<T>
 	' Global variable(s):
 	
 	' The name of this class.
-	Global Name_Str:String = "Vector(3D)"
-
+	Global Name_Str:= Vector3D_Name_Str
+	
 	' Functions:
 	Function Name:String()
 		Return Name_Str
@@ -2184,7 +2216,7 @@ Class Vector4D<T> Extends Vector3D<T>
 	' Global variable(s):
 	
 	' The name of this class.
-	Global Name_Str:String = "Vector(4D)"
+	Global Name_Str:= Vector4D_Name_Str
 
 	' Functions:
 	Function Name:String()
@@ -2330,7 +2362,7 @@ Class ManualVector<T> Extends Vector4D<T>
 	' Global variable(s):
 	
 	' The name of this class.
-	Global Name_Str:String = "Vector"
+	Global Name_Str:= ManualVector_Name_Str
 	
 	' Functions:
 	Function Name:String()

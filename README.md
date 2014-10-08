@@ -11,7 +11,7 @@ The standard vector module for most Monkey X code publicly available from both t
 	* ['brl.stream'](https://github.com/blitz-research/monkey/blob/develop/modules/brl/stream.monkey): Used for standard serialization via the 'ioelement' module's 'SerializableElement' interface.
 
 **References:**
-* [V. Lehtinen's vector implementation](http://www.monkey-x.com/Community/posts.php?topic=8998)
+* [V. Lehtinen's vector implementation](http://www.monkey-x.com/Community/posts.php?topic=8998).
 
 **Documentation notes:**
 * Any entries offset from the current entry by one 'TAB' character will act as a requirement for the entry one step above. If no sub-entries are present, then either there aren't extra requirements, or there isn't sufficient documentation.
