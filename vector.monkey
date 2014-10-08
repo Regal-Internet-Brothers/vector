@@ -58,6 +58,7 @@ Public
 #VECTOR_ALLOW_EXACT_GROWTH = True
 #VECTOR_SMART_GROW = True
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
+#VECTOR_LEGACY_NAME_STRINGS = False
 
 #If CONFIG = "release"
 	#VECTOR_ALTERNATE_DIVISION = True
@@ -312,8 +313,10 @@ Class AbstractVector<T> Implements Vector<T>
 	' The default value of the type specified.
 	Global NIL:T
 	
-	' The name of this class.
-	Global Name_Str:= AbstractVector_Name_Str
+	#If VECTOR_LEGACY_NAME_STRINGS
+		' The name of this class.
+		Global Name_Str:= AbstractVector_Name_Str
+	#End
 	
 	' Defaults:
 	
@@ -327,7 +330,11 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	' Functions:
 	Function Name:String()
-		Return Name_Str
+		#If VECTOR_LEGACY_NAME_STRINGS
+			Return Name_Str
+		#Else
+			Return AbstractVector_Name_Str
+		#End
 	End
 	
 	Function DotProductNormalized:T(V1:Vector<T>, V2:Vector<T>)
@@ -1524,12 +1531,18 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	' Global variable(s):
 	
-	' The name of this class.
-	Global Name_Str:= Vector2D_Name_Str
+	#If VECTOR_LEGACY_NAME_STRINGS
+		' The name of this class.
+		Global Name_Str:= Vector2D_Name_Str
+	#End
 
 	' Functions:
 	Function Name:String()
-		Return Name_Str
+		#If VECTOR_LEGACY_NAME_STRINGS
+			Return Name_Str
+		#Else
+			Return Vector2D_Name_Str
+		#End
 	End
 	
 	Function FromInts:Vector2D<T>(X:Int, Y:Int)
@@ -1943,12 +1956,18 @@ Class Vector3D<T> Extends Vector2D<T>
 	
 	' Global variable(s):
 	
-	' The name of this class.
-	Global Name_Str:= Vector3D_Name_Str
+	#If VECTOR_LEGACY_NAME_STRINGS
+		' The name of this class.
+		Global Name_Str:= Vector3D_Name_Str
+	#End
 	
 	' Functions:
 	Function Name:String()
-		Return Name_Str
+		#If VECTOR_LEGACY_NAME_STRINGS
+			Return Name_Str
+		#Else
+			Return Vector3D_Name_Str
+		#End
 	End
 	
 	Function FromInts:Vector3D<T>(X:Int, Y:Int, Z:Int)
@@ -2215,12 +2234,18 @@ Class Vector4D<T> Extends Vector3D<T>
 	
 	' Global variable(s):
 	
-	' The name of this class.
-	Global Name_Str:= Vector4D_Name_Str
+	#If VECTOR_LEGACY_NAME_STRINGS
+		' The name of this class.
+		Global Name_Str:= Vector4D_Name_Str
+	#End
 
 	' Functions:
 	Function Name:String()
-		Return Name_Str
+		#If VECTOR_LEGACY_NAME_STRINGS
+			Return Name_Str
+		#Else
+			Return Vector4D_Name_Str
+		#End
 	End
 	
 	Function FromInts:Vector4D<T>(A:Int, B:Int, C:Int, D:Int)
@@ -2361,12 +2386,18 @@ Class ManualVector<T> Extends Vector4D<T>
 	
 	' Global variable(s):
 	
-	' The name of this class.
-	Global Name_Str:= ManualVector_Name_Str
+	#If VECTOR_LEGACY_NAME_STRINGS
+		' The name of this class.
+		Global Name_Str:= ManualVector_Name_Str
+	#End
 	
 	' Functions:
 	Function Name:String()
-		Return Name_Str
+		#If VECTOR_LEGACY_NAME_STRINGS
+			Return Name_Str
+		#Else
+			Return ManualVector_Name_Str
+		#End
 	End
 
 	' Constructor(s):
