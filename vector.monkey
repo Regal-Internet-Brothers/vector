@@ -54,11 +54,73 @@ Public
 #End
 
 ' Preprocessor related:
+#VECTOR_IMPLEMENTED = True
+
+#Rem
+	VECTOR_TYPEFIXES:
+		DESCRIPTION:
+			* If this is enabled, hacks will be used in order to support non-numeric types, such as Monkey's standard "box" classes.
+			Default behavior for this module is to automatically enabled this functionality if the reflection filter is set to something.
+			
+			If you intend to use vectors made from the standard "box" classes, make sure to manually set this to 'True'.
+			(Especially if you're using reflection, though this should handle that already)
+		NOTES:
+			* Work has been done specifically to support the standard box types. Don't expect to have the same optimizations and/or fixes
+			for other types that use "auto boxing". That being said, assuming your conversion isn't ambiguous, this should still work with such types.
+			
+			* Some names for normally standard commands are different in this module;
+			this is because of conflicts with the current version of Monkey (As of the time I'm writing this).
+			
+			Such commands will be backed by the standard implementations automatically.
+			That being said, some of the fixes and other such hacks done within this module may provide
+			alternate implementations for the standard "box" classes.
+			
+			These implementations should still follow the standard behavior defined by Monkey's standards of conduct.
+			
+			In addition, this module reserves the right to reimplement the standard commands' behaviors at will, even if that likely will never be necessary.
+#End
+
+#If REFLECTION_FILTER
+	#VECTOR_TYPEFIXES = True
+#Else
+	#VECTOR_TYPEFIXES = False
+#End
+
+#VECTOR_SUPPORTLAYER_TYPEFIXES = VECTOR_TYPEFIXES
+
+#If VECTOR_SUPPORTLAYER_TYPEFIXES
+	' Enabling this could cause some performance and/or garbage-generation problems.
+	#VECTOR_DELEGATE_SUPPORTLAYER = False
+	
+	#Rem
+		DESCRIPTION:
+			* The support layer's "memory over-optimization" functionality basically
+			allows heavy re-use of objects without constraint.
+			
+			As an example, if a command takes an 'IntObject', then this will re-use the initial object.
+			
+			For this reason, when the support layer is delegated, the default behavior is to not apply such optimizations.
+			This is done due to the intrusive nature of this functionality.
+			
+			A user could easily experience unintended side-effects with this feature enabled.
+			This module (On the other hand) is designed to support this feature.
+	#End
+	
+	#VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY = (BOXUTIL_IMPLEMENTED And Not VECTOR_DELEGATE_SUPPORTLAYER)
+#End
+
+#VECTOR_ZERO_WITH_NIL = True
 #VECTOR_GROW_ON_ACCESS = True
 #VECTOR_ALLOW_EXACT_GROWTH = True
 #VECTOR_SMART_GROW = True
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
 #VECTOR_LEGACY_NAME_STRINGS = False
+
+#If LANG = "cpp"
+	#VECTOR_CONSTANT_NAME_STRINGS = False
+#Else
+	#VECTOR_CONSTANT_NAME_STRINGS = True
+#End
 
 #If CONFIG = "release"
 	#VECTOR_ALTERNATE_DIVISION = True
@@ -80,6 +142,10 @@ Public
 	#VECTOR_SUPPORT_IOELEMENT = True
 #End
 
+#If SIZEOF_IMPLEMENTED
+	#VECTOR_SUPPORT_SIZEOF = True
+#End
+
 #VECTOR_ALLOW_SERIALIZATION = True
 
 ' Imports (Public):
@@ -89,6 +155,10 @@ Import util
 
 #If VECTOR_SUPPORT_IOELEMENT
 	Import ioelement
+#End
+
+#If VECTOR_SUPPORT_SIZEOF
+	Import sizeof
 #End
 
 ' Imports (Private):
@@ -101,22 +171,54 @@ Private
 
 Public
 
-' Global variable(s):
+' Imports (Other):
+#If Not VECTOR_DELEGATE_SUPPORTLAYER
+	Private
+#End
+
+Import supportlayer
+
+#If Not VECTOR_DELEGATE_SUPPORTLAYER
+	Public
+#End
+
+' Global variable(s) (Public):
+' Nothing so far.
+
+' Global variable(s) (Private):
+Private
 
 ' Class name-string instances:
-Global AbstractVector_Name_Str:String = "Vector (Abstract)"
-Global Vector2D_Name_Str:String = "Vector(2D)"
-Global Vector3D_Name_Str:String = "Vector(3D)"
-Global Vector4D_Name_Str:String = "Vector(4D)"
-Global ManualVector_Name_Str:String = "Vector"
+#If Not VECTOR_CONSTANT_NAME_STRINGS
+	Global AbstractVector_Name_Str:String = "Vector (Abstract)"
+	Global Vector2D_Name_Str:String = "Vector(2D)"
+	Global Vector3D_Name_Str:String = "Vector(3D)"
+	Global Vector4D_Name_Str:String = "Vector(4D)"
+	Global ManualVector_Name_Str:String = "Vector"
+#End
 
-' Constant variable(s):
+Public
+
+' Constant variable(s) (Public):
 Const VECTOR_AUTO:= UTIL_AUTO
 
 ' Property data-positions:
 Const VECTOR_XPOSITION:= 0
 Const VECTOR_YPOSITION:= 1
 Const VECTOR_ZPOSITION:= 2
+
+' Constant variable(s) (Private):
+Private
+
+#If VECTOR_CONSTANT_NAME_STRINGS
+	Const AbstractVector_Name_Str:String = "Vector (Abstract)"
+	Const Vector2D_Name_Str:String = "Vector(2D)"
+	Const Vector3D_Name_Str:String = "Vector(3D)"
+	Const Vector4D_Name_Str:String = "Vector(4D)"
+	Const ManualVector_Name_Str:String = "Vector"
+#End
+
+Public
 
 ' Interfaces:
 Interface Vector<T>
@@ -126,13 +228,6 @@ Interface Vector<T>
 	Const ZPOS:= VECTOR_ZPOSITION
 	
 	Const AUTO:= VECTOR_AUTO
-	
-	Const ZERO:= T(0)
-	Const ONE:= T(1)
-	Const TWO:= T(2)
-	
-	Const FULL_ROTATION_IN_DEGREES:= T(360)
-	Const HALF_FULL_ROTATION_IN_DEGREES:= FULL_ROTATION_IN_DEGREES / TWO
 	
 	' Methods (Public):
 	
@@ -211,7 +306,7 @@ Interface Vector<T>
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method DotProductNormalized:T(V:Vector<T>)
 	
-	Method SubtractTowardsZero:Void(Time:T=ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method SubtractTowardsZero:Void(Time:T=AbstractVector<T>.ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
 	Method ProjectionScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -280,7 +375,7 @@ Class AbstractVector<T> Implements Vector<T>, SerializableElement
 #Else
 Class AbstractVector<T> Implements Vector<T>
 #End
-	' Constant variables:
+	' Constant variable(s):
 	
 	' The position of the 'X' property.
 	Const XPOS:= Vector<T>.XPOS
@@ -291,14 +386,6 @@ Class AbstractVector<T> Implements Vector<T>
 	' General:
 	Const AUTO:= VECTOR_AUTO
 	
-	' Number constants:
-	Const ZERO:= Vector<T>.ZERO
-	Const ONE:= Vector<T>.ONE
-	Const TWO:= Vector<T>.TWO
-	
-	Const FULL_ROTATION_IN_DEGREES:= Vector<T>.FULL_ROTATION_IN_DEGREES
-	Const HALF_FULL_ROTATION_IN_DEGREES:= Vector<T>.HALF_FULL_ROTATION_IN_DEGREES
-	
 	' Error template(s):
 	Const VECTOR_GENERIC_ERROR_TEMPLATE:String = "{VECTOR} {ERROR}: "
 	
@@ -308,7 +395,7 @@ Class AbstractVector<T> Implements Vector<T>
 	' Boleans / Flags:
 	Const Default_ToString_FixErrors:Bool = True
 	
-	' Global variables:
+	' Global variable(s):
 	
 	' The default value of the type specified.
 	Global NIL:T
@@ -317,6 +404,18 @@ Class AbstractVector<T> Implements Vector<T>
 		' The name of this class.
 		Global Name_Str:= AbstractVector_Name_Str
 	#End
+	
+	#If VECTOR_ZERO_WITH_NIL
+		Global ZERO:= NIL
+	#Else
+		Global ZERO:= T(0)
+	#End
+	
+	Global ONE:= T(1)
+	Global TWO:= T(2)
+	
+	Global FULL_ROTATION_IN_DEGREES:T = T(360)
+	Global HALF_FULL_ROTATION_IN_DEGREES:T = T(180.0)
 	
 	' Defaults:
 	
@@ -491,7 +590,7 @@ Class AbstractVector<T> Implements Vector<T>
 						#If CONFIG = "debug"
 							VectorError("Attempted to access an invalid or non-existent element.")
 						#End
-					
+						
 						Return NIL
 				#If VECTOR_GROW_ON_ACCESS
 					Endif
@@ -634,7 +733,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[I] = Abs(Data[I])
+			Data[I] = AbsoluteNumber(Data[I])
 		Next
 		
 		Return
@@ -649,11 +748,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			#If Not VECTOR_ALTERNATE_NEGATE
-				Data[I] = -Data[I]
-			#Else
-				Data[I] *= -1
-			#End
+			Data[I] = NegateNumber(Data[I])
 		Next
 		
 		Return
@@ -675,7 +770,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Self.Data[I] = Min(Self.Data[I], Value)
+			Self.Data[I] = MinimumNumber(Self.Data[I], Value)
 		Next
 		
 		Return
@@ -690,7 +785,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Self.Data[I] = Max(Self.Data[I], Value)
+			Self.Data[I] = MaximumNumber(Self.Data[I], Value)
 		Next
 		
 		Return
@@ -705,7 +800,7 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Self.Data[I] = Clamp(Self.Data[I], MinValue, MaxValue)
+			Self.Data[I] = ClampNumber(Self.Data[I], MinValue, MaxValue)
 		Next
 		
 		Return
@@ -727,7 +822,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] += A[Index]
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = AddNumbers(Data[Index], A[Index])
+			#Else
+				Data[Index] += A[Index]
+			#End
 		Next
 		
 		Return
@@ -743,7 +842,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[Index] += F
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = AddNumbers(Data[Index], F)
+			#Else
+				Data[Index] += F
+			#End
 		Next
 		
 		Return
@@ -764,7 +867,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] += A[Index] * Scalar
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DeltaAddNumbers(Data[Index], A[Index], Scalar)
+			#Else
+				Data[Index] += A[Index] * Scalar
+			#End
 		Next
 		
 		Return
@@ -779,7 +886,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[Index] += F * Scalar
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DeltaAddNumbers(Data[Index], F, Scalar)
+			#Else
+				Data[Index] += F * Scalar
+			#End
 		Next
 		
 		Return
@@ -796,10 +907,16 @@ Class AbstractVector<T> Implements Vector<T>
 		Local VelocityLength:= Length()
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			If (Data[Index] > 0.0) Then
-				Data[Index] = Max(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), ZERO)
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Local Value:= InnerValue(Data[Index])
+			#Else
+				Local Value:= Data[Index]
+			#End
+			
+			If (Value > 0.0) Then
+				Data[Index] = MaximumNumber(T(Value-(((Value / VelocityLength)*Deceleration))), ZERO)
 			Else
-				Data[Index] = Min(Data[Index]-(((Data[Index] / VelocityLength)*Deceleration)), ZERO)
+				Data[Index] = MinimumNumber(T(Value-(((Value / VelocityLength)*Deceleration))), ZERO)
 			Endif
 		Next
 		
@@ -828,7 +945,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] -= A[Index]
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = SubtractNumber(Data[Index], A[Index])
+			#Else
+				Data[Index] -= A[Index]
+			#End
 		Next
 		
 		Return
@@ -844,7 +965,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[Index] -= F
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = SubtractNumber(Data[Index], F)
+			#Else
+				Data[Index] -= F
+			#End
 		Next
 		
 		Return
@@ -866,10 +991,18 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
 			#If Not VECTOR_ALTERNATE_DIVISION
-				Data[Index] /= A[Index]
+				#If VECTOR_SUPPORTLAYER_TYPEFIXES
+					Data[Index] = DivideNumber(Data[Index], A[Index])
+				#Else
+					Data[Index] /= A[Index]
+				#End
 			#Else
 				' Local variable(s):
-				Local A_On_Index:= A[Index]
+				#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
+					Local A_On_Index:= A[Index]
+				#Else
+					Local A_On_Index:= InnerValue(A[Index])
+				#End
 				
 				#If VECTOR_NUMBER_SAFETY
 					If (A_On_Index <> NIL) Then
@@ -906,7 +1039,11 @@ Class AbstractVector<T> Implements Vector<T>
 			Endif
 			
 			For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-				Data[Index] /= F
+				#If VECTOR_SUPPORTLAYER_TYPEFIXES
+					Data[Index] = DivideNumber(Data[Index], F)
+				#Else
+					Data[Index] /= F
+				#End
 			Next
 		#End
 		
@@ -928,7 +1065,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] *= A[Index]
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = MultiplyNumbers(Data[Index], A[Index])
+			#Else
+				Data[Index] *= A[Index]
+			#End
 		Next
 		
 		Return
@@ -943,7 +1084,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			Data[Index] *= F
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = MultiplyNumbers(Data[Index], F)
+			#Else
+				Data[Index] *= F
+			#End
 		Next
 		
 		Return
@@ -964,11 +1109,15 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		#If VECTOR_NUMBER_SAFETY
-			t = Clamp(t, ZERO, ONE)
+			t = ClampNumber(t, ZERO, ONE)
 		#End
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Data[Index] = Data[Index] + (A[Index]-Data[Index]) * t
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DeltaAddNumbers(Data[Index], T(InnerValue(A[Index])-InnerValue(Data[Index])), t)
+			#Else
+				Data[Index] += (A[Index]-Data[Index]) * t
+			#End
 		Next
 		
 		Return
@@ -1036,10 +1185,18 @@ Class AbstractVector<T> Implements Vector<T>
 		Endif
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			D += Pow(A[Index]-Data[Index], TWO)
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				D += Pow(InnerValue(A[Index])-InnerValue(Data[Index]), TWO)
+			#Else
+				D += Pow(A[Index]-Data[Index], TWO)
+			#End
 		Next
 		
-		Return Sqrt(D)
+		#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return Sqrt(D)
+		#Else
+			Return Sqrt(InnerValue(D))
+		#End
 	End
 	
 	Method Offset:T(Amount:T)
@@ -1063,7 +1220,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Local Sum:T = NIL
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Sum += Data[Index]*A[Index]
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Sum += (InnerValue(Data[Index])*InnerValue(A[Index]))
+			#Else
+				Sum += Data[Index]*A[Index]
+			#End
 		Next
 		
 		Return Sum
@@ -1130,14 +1291,20 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		' Ensure we have a valid delta.
 		#If VECTOR_NUMBER_SAFETY
-			Time = Clamp(Time, ZERO, ONE)
+			Time = ClampNumber(Time, ZERO, ONE)
 		#End
 		
 		For Local I:= VData_Offset Until Min(VData_Length, VData_RawLength)
-			If (Data[I] > ZERO) Then
-				Data[I] = Max(Data[I]-(Data[I]*Time), ZERO)
+			#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
+				Local Value:= Data[I]
+			#Else
+				Local Value:= InnerValue(Data[I])
+			#End
+			
+			If (Value > ZERO) Then
+				Data[I] = MaximumNumber(T(Value-(Value*Time)), ZERO)
 			Else
-				Data[I] = Min(Data[I]-(Data[I]*Time), ZERO)
+				Data[I] = MinimumNumber(T(Value-(Value*Time)), ZERO)
 			Endif
 		Next
 		
@@ -1149,7 +1316,11 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		Return (DotProduct(A, A_Length, A_Offset) / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return DivideNumber(DotProduct(A, A_Length, A_Offset), LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		#Else
+			Return (DotProduct(A, A_Length, A_Offset) / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		#End
 	End
 	
 	Method Project:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1217,7 +1388,11 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method AngleBetween_TransformProduct:T(Product:T, A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		Return (Product / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return T(InnerValue(Product) / InnerValue(LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset)))
+		#Else
+			Return (Product / LengthScalar(A, A_Length, A_Offset, VData_Length, VData_Offset))
+		#End
 	End
 	
 	Method LengthScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1225,7 +1400,11 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method LengthScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		Return (Length(VData_Length, VData_Offset) * Length(A, A_Length, A_Offset))
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return MultiplyNumbers(Length(VData_Length, VData_Offset), Length(A, A_Length, A_Offset))
+		#Else
+			Return (Length(VData_Length, VData_Offset) * Length(A, A_Length, A_Offset))
+		#End
 	End
 	
 	Method Normalized:Vector<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
@@ -1362,7 +1541,11 @@ Class AbstractVector<T> Implements Vector<T>
 		Local Sum:T = ZERO
 		
 		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			Sum += A[Index]*A[Index] ' Pow(A[Index], TWO)
+			#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
+				Sum += (A[Index]*A[Index]) ' Pow(A[Index], TWO)
+			#Else
+				Sum += Sq(A[Index])
+			#End
 		Next
 		
 		Return Sqrt(Sum)
@@ -1370,7 +1553,11 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Length:Void(Value:T) Property
 		' Local variable(s):
-		Local Length:= Self.Length
+		#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
+			Local Length:= Self.Length
+		#Else
+			Local Length:= InnerValue(Length)
+		#End
 		
 		If (Value = NIL) Then
 			Zero()
@@ -1400,6 +1587,12 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		Return
 	End
+	
+	#If VECTOR_SUPPORT_SIZEOF
+		Method SizeInBytes:Int() Property
+			Return (Size * sizeof.SizeOf(X))
+		End
+	#End
 	
 	Method LastIndex:Int() Property
 		Return Size-1
@@ -1647,7 +1840,11 @@ Class Vector2D<T> Extends AbstractVector<T>
 			Endif
 		#End
 		
-		Return (X*A[REAL_Y] - Y*A[REAL_X])
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return (InnerValue(X)*InnerValue(A[REAL_Y]) - InnerValue(Y)*InnerValue(A[REAL_X]))
+		#Else
+			Return (X*A[REAL_Y] - Y*A[REAL_X])
+		#End
 	End
 	
 	Method RotateTowards:Void(V:Vector2D<T>)
@@ -1671,7 +1868,11 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method AngleTo_2D:T(V:Vector2D<T>)
-		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Y - V.Y, X - V.X)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(InnerValue(Y) - InnerValue(V.Y), InnerValue(X) - InnerValue(V.X))
+		#Else
+			Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Y - V.Y, X - V.X)
+		#End
 	End
 	
 	Method AngleBetweenSin:T(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1720,8 +1921,15 @@ Class Vector2D<T> Extends AbstractVector<T>
 		' Local variable(s):
 		Local X:= Self.X
 		
-		Self.X = -Y
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Self.X = -InnerValue(Y)
+		#Else
+			Self.X = -Y
+		#End
+		
 		Self.Y = X
+		
+		Return
 	End
 	
 	Method AsReversePerpendicular:Void()
@@ -1729,7 +1937,12 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Local X:= Self.X
 		
 		Self.X = Y
-		Self.Y = -X
+		
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Self.Y = -InnerValue(X)
+		#Else
+			Self.Y = -X
+		#End
 		
 		Return
 	End
@@ -1880,7 +2093,11 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	' Properties (Public):
 	Method Angle:T() Property
-		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(-Y, -X)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(-InnerValue(Y), -InnerValue(X))
+		#Else
+			Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(-Y, -X)
+		#End
 	End
 	
 	Method Angle:Void(Input:T) Property
@@ -1895,11 +2112,15 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	' This is mainly used for ratios.
 	Method Delta_1D:T() Property
-		Return (Y-X)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return (InnerValue(Y)-InnerValue(X))
+		#Else
+			Return (Y-X)
+		#End
 	End
 	
 	Method Distance_1D:T() Property
-		Return Abs(Delta_1D)
+		Return AbsoluteNumber(Delta_1D)
 	End
 	
 	Method G:T() Property
