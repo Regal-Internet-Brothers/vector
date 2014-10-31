@@ -10,7 +10,7 @@ The standard vector module for most Monkey X code publicly available from both t
 * ['ioelement'](https://github.com/Regal-Internet-Brothers/ioelement): All standard vector implementations can optionally support the 'SerializableElement' interface.
 	* ['brl.stream'](https://github.com/blitz-research/monkey/blob/develop/modules/brl/stream.monkey): Used for standard serialization via the 'ioelement' module's 'SerializableElement' interface.
 
-* 'supportlayer' (Local)
+* 'supportlayer' (Local module): Can be partially toggled using the 'VECTOR_TYPEFIXES' and/or 'VECTOR_SUPPORTLAYER_TYPEFIXES' preprocessor variables.
 	* ['boxutil'](https://github.com/Regal-Internet-Brothers/boxutil): Used for handling the standard "box" classes.
 
 **References:**
