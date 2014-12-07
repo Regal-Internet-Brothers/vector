@@ -15,12 +15,15 @@ Public
 		
 		See commands like the 'Vector2D' class's 'Add2D', and the 'Vector3D' class's 'Rotate_3D' as examples.
 		
-		* Most methods (Unless explicitly stated otherwise) will affect the vector their used from.
+		* Most methods (Unless explicitly stated otherwise) will affect the vector they're used from.
 		
 		For example, the 'Add' command found in the 'AbstractVector' class does not produce a vector of any kind.
 		This command only affects its own object's ('Self') data, meaning it will mutate based on the input.
 		
 		However, it will likely not mutate the input itself.
+		
+		* Any names you find in this module starting with the word "Alternate" are subject to change at any point.
+		These elements are used by my own projects, and their underlying functionality will not be set in stone.
 		
 	GENERAL ARGUMENT NOTES:
 		* When reading the arguments of some of these commands, you'll find some common names.
@@ -50,7 +53,15 @@ Public
 		* For the sake of future-proofing, all 'For' loops with in-line local variables which are directly
 		used to iterate through memory will be done with dynamic type-detection via the ':=' operator.
 		
+		This operator is also common in this module (And my other modules) when type-information is unimportant.
+		
 		* THESE RULES DO NOT APPLY TO ALL MODULES I RELEASE, BUT THEY DEFINITELY APPLY HERE.
+		
+		* If you're interested in better performance with some C++ compilers, you might want to look into SSE and AVX optimization options.
+		I wrote some basic information about this in my 'hash' module.
+		
+		That functionality is not available here, but the notes I wrote could be of interest.
+		Optimizations applied in that module will likely apply to this one.
 #End
 
 ' Preprocessor related:
@@ -88,6 +99,79 @@ Public
 
 #VECTOR_SUPPORTLAYER_TYPEFIXES = VECTOR_TYPEFIXES
 
+#VECTOR_ZERO_WITH_NIL = True
+#VECTOR_GROW_ON_ACCESS = True
+#VECTOR_ALLOW_EXACT_GROWTH = True
+#VECTOR_SMART_GROW = True
+#VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
+#VECTOR_LEGACY_NAME_STRINGS = False
+
+' Determine which route should be used for class-name storage:
+#If LANG = "cpp"
+	#VECTOR_CONSTANT_NAME_STRINGS = False
+#Else
+	#VECTOR_CONSTANT_NAME_STRINGS = True
+#End
+
+#Rem
+	These variables toggle specific checks which may improve
+	program stability and sometimes, even performance.
+	Unless you're seriously looking into debugging
+	this module, don't bother changing these.
+#End
+
+#If CONFIG = "debug"
+	#VECTOR_SAFETY = True
+	#VECTOR_NUMBER_SAFETY = True
+#Else
+	#VECTOR_SAFETY = True ' False
+	#VECTOR_NUMBER_SAFETY = False
+#End
+
+#Rem
+	Alternate division can sometimes improve performance,
+	the default state of this variable is "undefined".
+	
+	This means I may change the default state
+	of this functionality at some point in the future.
+#End
+
+#If Not VECTOR_NUMBER_SAFETY And CONFIG = "release"
+	#VECTOR_ALTERNATE_DIVISION = True
+#Else
+	#VECTOR_ALTERNATE_DIVISION = False
+#End
+
+' This is just a backup check:
+#If Not VECTOR_NUMBER_SAFETY
+	#Rem
+		This functionality can potentially improve performance on some systems.
+		Basically, if this is enabled, this module will negate numbers using multiplication.
+		
+		I do not currently recommend this strategy, as it's
+		really just something the compiler should be handling.
+	#End
+	
+	#VECTOR_ALTERNATE_NEGATE = False ' True
+#End
+
+' Imports (Public):
+
+' ImmutableOctet:
+Import boxutil
+Import util
+Import ioelement
+Import sizeof
+
+' Imports (Private):
+Private
+
+' BRL:
+Import brl.stream
+
+Public
+
+' The following operations must be done in order to configure the module(s) imported afterword:
 #If VECTOR_SUPPORTLAYER_TYPEFIXES
 	' Enabling this could cause some performance and/or garbage-generation problems.
 	#VECTOR_DELEGATE_SUPPORTLAYER = False
@@ -109,68 +193,6 @@ Public
 	#VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY = (BOXUTIL_IMPLEMENTED And Not VECTOR_DELEGATE_SUPPORTLAYER)
 #End
 
-#VECTOR_ZERO_WITH_NIL = True
-#VECTOR_GROW_ON_ACCESS = True
-#VECTOR_ALLOW_EXACT_GROWTH = True
-#VECTOR_SMART_GROW = True
-#VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
-#VECTOR_LEGACY_NAME_STRINGS = False
-
-#If LANG = "cpp"
-	#VECTOR_CONSTANT_NAME_STRINGS = False
-#Else
-	#VECTOR_CONSTANT_NAME_STRINGS = True
-#End
-
-#If CONFIG = "release"
-	#VECTOR_ALTERNATE_DIVISION = True
-#Else
-	#VECTOR_ALTERNATE_DIVISION = False
-#End
-
-#If CONFIG = "debug"
-	#VECTOR_SAFETY = True
-	#VECTOR_NUMBER_SAFETY = True
-#Else
-	#VECTOR_SAFETY = True ' False
-	#VECTOR_NUMBER_SAFETY = False
-#End
-
-#VECTOR_ALTERNATE_NEGATE = False ' True
-
-#If IOELEMENT_IMPLEMENTED
-	#VECTOR_SUPPORT_IOELEMENT = True
-#End
-
-#If SIZEOF_IMPLEMENTED
-	#VECTOR_SUPPORT_SIZEOF = True
-#End
-
-#VECTOR_ALLOW_SERIALIZATION = True
-
-' Imports (Public):
-
-' ImmutableOctet:
-Import util
-
-#If VECTOR_SUPPORT_IOELEMENT
-	Import ioelement
-#End
-
-#If VECTOR_SUPPORT_SIZEOF
-	Import sizeof
-#End
-
-' Imports (Private):
-Private
-
-' BRL:
-#If VECTOR_ALLOW_SERIALIZATION
-	Import brl.stream
-#End
-
-Public
-
 ' Imports (Other):
 #If Not VECTOR_DELEGATE_SUPPORTLAYER
 	Private
@@ -180,6 +202,26 @@ Import supportlayer
 
 #If Not VECTOR_DELEGATE_SUPPORTLAYER
 	Public
+#End
+
+' Check which modules were implemented, then perform various operations accordingly:
+
+' These checks are mainly for optional functionality:
+#If BRL_STREAM_IMPLEMENTED
+	' If this is enabled, the standard I/O methods will be implemented.
+	#VECTOR_ALLOW_SERIALIZATION = True
+#End
+
+' Check if serialization was enabled, and if we were able to find the 'ioelement' module:
+#If VECTOR_ALLOW_SERIALIZATION And IOELEMENT_IMPLEMENTED
+	' If enabled, this will allow the standard vector implementation
+	' to be compliant with the 'SerializableElement' interface.
+	#VECTOR_SUPPORT_IOELEMENT = True
+#End
+
+' Check if we should support the 'sizeof' module:
+#If SIZEOF_IMPLEMENTED
+	#VECTOR_SUPPORT_SIZEOF = True
 #End
 
 ' Global variable(s) (Public):
@@ -1867,11 +1909,23 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return AngleTo_2D(V)
 	End
 	
+	Method AlternateAngleTo:T(V:Vector2D<T>)
+		Return AlternateAngleTo_2D(V)
+	End
+	
 	Method AngleTo_2D:T(V:Vector2D<T>)
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(InnerValue(Y) - InnerValue(V.Y), InnerValue(X) - InnerValue(V.X))
 		#Else
 			Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Y - V.Y, X - V.X)
+		#End
+	End
+	
+	Method AlternateAngleTo_2D:T(V:Vector2D<T>)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return ATan2(-(InnerValue(X) + InnerValue(V.X)), -(InnerValue(Y) + InnerValue(V.Y)))
+		#Else
+			Return ATan2(-(X + V.X), -(Y + V.Y))
 		#End
 	End
 	
@@ -2110,7 +2164,33 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return
 	End
 	
-	' This is mainly used for ratios.
+	#Rem
+		This property was mainly built to be used
+		when drawing rotated images based on a vector.
+		There are also several alternate versions of the
+		angle/rotation oriented commands in this module.
+		
+		"Alternate" functionality is mostly untested,
+		and should be used with a grain of salt.
+		
+		This functionality was added for my own internal purposes,
+		and is subject to change at any time.
+	#End
+	
+	Method AlternateAngle:T() Property
+		Return ATan2(-X, -Y)
+	End
+	
+	Method AlternateAngle:Void(Input:T) Property
+		Local Length:= Self.Length()
+		
+		X = Length * Sin(Input)
+		Y = Length * Cos(Input)
+		
+		Return
+	End
+	
+	' This property is mainly used for calculating ratios:
 	Method Delta_1D:T() Property
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return (InnerValue(Y)-InnerValue(X))
@@ -2377,8 +2457,33 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return AngleTo_2D(V)
 	End
 	
+	Method AlternateAngleTo:T(V:Vector2D<T>)
+		' Local variable(s):
+		
+		' Check if the input was a 'Vector3D'.
+		Local V3D:= Vector3D<T>(V)
+		
+		If (V3D <> Null) Then
+			Return AlternateAngleTo_3D(V3D)
+		Endif
+		
+		Return AlternateAngleTo_2D(V)
+	End
+	
 	Method AngleTo_3D:T(V:Vector3D<T>)
-		Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Z - V.Z, X - V.X)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(InnerValue(Z) - InnerValue(V.Z), InnerValue(X) - InnerValue(V.X))
+		#Else
+			Return HALF_FULL_ROTATION_IN_DEGREES - ATan2(Z - V.Z, X - V.X)
+		#End
+	End
+	
+	Method AlternateAngleTo_3D:T(V:Vector3D<T>)
+		#If VECTOR_SUPPORTLAYER_TYPEFIXES
+			Return ATan2(-(InnerValue(Z) + InnerValue(V.Z)), -(InnerValue(X) + InnerValue(V.X)))
+		#Else
+			Return ATan2(-(Z + V.Z), -(X + V.X))
+		#End
 	End
 	
 	Method Normalized3D:Vector3D<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
