@@ -37,7 +37,7 @@ Public
 		
 		* A_Length: The length of the current (Usually external) array.
 		* A_Offset: The offset used when accessing the current (Usually external) array.
-	
+		
 	OTHER NOTES:
 		* When dealing with lengths and offsets in this module, it's best to understand what they actually mean.
 		Basically, most situations which allow manual input for offsets and/or lengths work with a 'For' loop internally.
@@ -1867,11 +1867,11 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOUT
 	End
 	
-	Method CrossProduct_2D:T(V:Vector2D<T>, VData_Offset:Int=XPOS)
+	Method CrossProduct_2D:T(V:Vector2D<T>, VData_Offset:Int=XPOS) Final
 		Return CrossProduct_2D(V.Data, VData_Offset)
 	End
 	
-	Method CrossProduct_2D:T(A:T[], A_Offset:Int=XPOS)
+	Method CrossProduct_2D:T(A:T[], A_Offset:Int=XPOS) Final
 		' Local variable(s):
 		Local REAL_X:= XPOS+A_Offset
 		Local REAL_Y:= YPOS+A_Offset
@@ -1896,6 +1896,12 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method Rotate:Void(Angle:T)
+		Rotate_2D(Angle)
+		
+		Return
+	End
+	
+	Method Rotate_2D:Void(Angle:T) Final
 		' Local variable(s):
 		Local Length:= Self.Length()
 		
@@ -1913,7 +1919,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return AlternateAngleTo_2D(V)
 	End
 	
-	Method AngleTo_2D:T(V:Vector2D<T>)
+	Method AngleTo_2D:T(V:Vector2D<T>) Final
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(InnerValue(Y) - InnerValue(V.Y), InnerValue(X) - InnerValue(V.X))
 		#Else
@@ -1921,7 +1927,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		#End
 	End
 	
-	Method AlternateAngleTo_2D:T(V:Vector2D<T>)
+	Method AlternateAngleTo_2D:T(V:Vector2D<T>) Final
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return ATan2(-(InnerValue(X) + InnerValue(V.X)), -(InnerValue(Y) + InnerValue(V.Y)))
 		#Else
@@ -2191,7 +2197,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	' This property is mainly used for calculating ratios:
-	Method Delta_1D:T() Property
+	Method Delta_1D:T() Property Final
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return (InnerValue(Y)-InnerValue(X))
 		#Else
@@ -2199,7 +2205,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		#End
 	End
 	
-	Method Distance_1D:T() Property
+	Method Distance_1D:T() Property Final
 		Return AbsoluteNumber(Delta_1D)
 	End
 	
@@ -2356,7 +2362,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return VOUT
 	End
 	
-	Method CrossProduct_3D:Void(V:Vector3D<T>)
+	Method CrossProduct_3D:Void(V:Vector3D<T>) Final
 		' Local variable(s):
 		
 		' Cache the internal-data locally:
@@ -2399,32 +2405,32 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return
 	End
 	
-	Method Rotate_2DIn3D:Void(V:Vector2D<T>)
+	Method Rotate_2DIn3D:Void(V:Vector2D<T>) Final
 		Rotate_2DIn3D(V.X, V.Y)
 		
 		Return
 	End
 	
-	Method Rotate_2DIn3D:Void(RX:T, RY:T)
+	Method Rotate_2DIn3D:Void(RX:T, RY:T) Final
 		Rotate_2DIn3D(RX, RY, Length())
 		
 		Return
 	End
 	
-	Method Rotate_2DIn3D:Void(RX:T, RZ:T, Length:T)
+	Method Rotate_2DIn3D:Void(RX:T, RZ:T, Length:T) Final
 		X = Length * RX
 		Z = Length * RZ
 		
 		Return
 	End
 	
-	Method Rotate_3D:Void(RX:T, RY:T, RZ:T)
+	Method Rotate_3D:Void(RX:T, RY:T, RZ:T) Final
 		Rotate_3D(RX, RY, RZ, Length())
 		
 		Return
 	End
 	
-	Method Rotate_3D:Void(RX:T, RY:T, RZ:T, Length:T)
+	Method Rotate_3D:Void(RX:T, RY:T, RZ:T, Length:T) Final
 		Rotate_2DIn3D(RX, RZ, Length)
 		
 		Y = Length * RY
@@ -2432,13 +2438,13 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return
 	End
 	
-	Method Rotate_3D:Void(R:Vector3D<T>)
+	Method Rotate_3D:Void(R:Vector3D<T>) Final
 		Rotate_3D(R.X, R.Y, R.Z)
 		
 		Return
 	End
 	
-	Method RotateTowards_3D:Void(V:Vector3D<T>, TempVector:Vector3D<T>=Null)
+	Method RotateTowards_3D:Void(V:Vector3D<T>, TempVector:Vector3D<T>=Null) Final
 		Rotate_3D(Vector3D<T>(CrossProduct(V, TempVector)))
 		
 		Return
@@ -2470,7 +2476,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return AlternateAngleTo_2D(V)
 	End
 	
-	Method AngleTo_3D:T(V:Vector3D<T>)
+	Method AngleTo_3D:T(V:Vector3D<T>) Final
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(InnerValue(Z) - InnerValue(V.Z), InnerValue(X) - InnerValue(V.X))
 		#Else
@@ -2478,7 +2484,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		#End
 	End
 	
-	Method AlternateAngleTo_3D:T(V:Vector3D<T>)
+	Method AlternateAngleTo_3D:T(V:Vector3D<T>) Final
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return ATan2(-(InnerValue(Z) + InnerValue(V.Z)), -(InnerValue(X) + InnerValue(V.X)))
 		#Else
