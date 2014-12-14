@@ -106,6 +106,34 @@ Public
 #VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
 #VECTOR_LEGACY_NAME_STRINGS = False
 
+#Rem
+	Basically, if you disable this, class-specific
+	implementations of shared commands may be used.
+	
+	If you enable this, several implementations of
+	a normally shared command may be used.
+	
+	Enabling this is generally faster, but you
+	should probably leave this variable alone.
+	
+	This is only used for cases where class-specific
+	implementations of a command are effectively identical.
+	
+	The big example here being the 'MakeBetween' command,
+	and similar commands which generate new vectors.
+	
+	This can happen pretty often where 'Clone' is used.
+	
+	This setting does not affect class-specific commands
+	like the 'Vector2D' class's 'MakeBetween2D' method.
+	
+	This does not act as a rule, it acts as a guideline;
+	the value of this preprocessor variable does not
+	directly dictate this module's final decisions.
+#End
+
+#VECTOR_SHARE_OPTIMIZATIONS = True
+
 ' Determine which route should be used for class-name storage:
 #If LANG = "cpp"
 	#VECTOR_CONSTANT_NAME_STRINGS = False
@@ -263,6 +291,20 @@ Private
 Public
 
 ' Interfaces:
+
+#Rem
+	There are a number of requirements for implementing a vector class.
+	This interface shows exactly what those are.
+	Any class following this interface can work with the standard implementation.
+	
+	This is also used by the standard vector classes
+	as a nonspecific interface between each other.
+	Such functionality may or may not be required by this interface.
+	
+	If you decide to implement this, please use this interface for commands
+	in your own vector class, which do not need instances of that specific class.
+#End
+
 Interface Vector<T>
 	' Constant variable(s):
 	Const XPOS:= VECTOR_XPOSITION
@@ -2041,8 +2083,22 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return VOut
 	End
 	
-	Method MakeBetween2D:Vector2D<T>(V:Vector2D<T>)
-		Return Vector2D<T>(MakeBetween(V))
+	#If Not VECTOR_SHARE_OPTIMIZATIONS
+		Method MakeBetween:Vector<T>(V:Vector<T>)
+			Return MakeBetween2D(V)
+		End
+	#End
+	
+	Method MakeBetween2D:Vector2D<T>(V:Vector<T>)
+		' Local variable(s):
+		
+		' Generate a new vector.
+		Local VOUT:= CloneAs2D()
+		
+		VOUT.Subtract(V)
+		
+		' Return the output-vector.
+		Return VOUT
 	End
 	
 	Method Divide2D:Vector2D<T>(V:Vector<T>)
@@ -2346,10 +2402,12 @@ Class Vector3D<T> Extends Vector2D<T>
 			Endif
 		#End
 		
-		' Call the main implementation.
+		' Call the main implementation, then return its output.
 		Return CrossProduct3D(V3D, V3DOut)
 	End
 	
+	' If you're dealing with 'Vector3D' objects directly,
+	' then you really should use this command over 'CrossProduct':
 	Method CrossProduct3D:Vector3D<T>(V:Vector3D<T>, VOUT:Vector3D<T>=Null)
 		If (VOUT = Null) Then
 			VOUT = New Vector3D<T>(Self)
@@ -2378,8 +2436,22 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return
 	End
 	
-	Method MakeBetween3D:Vector3D<T>(V:Vector3D<T>)
-		Return Vector3D<T>(MakeBetween(V))
+	#If Not VECTOR_SHARE_OPTIMIZATIONS
+		Method MakeBetween:Vector<T>(V:Vector<T>)
+			Return MakeBetween3D(V)
+		End
+	#End
+	
+	Method MakeBetween3D:Vector3D<T>(V:Vector<T>)
+		' Local variable(s):
+		
+		' Generate a new vector.
+		Local VOUT:= CloneAs3D()
+		
+		VOUT.Subtract(V)
+		
+		' Return the output-vector.
+		Return VOUT
 	End
 	
 	Method RotateTowards:Void(V:Vector2D<T>)
@@ -2624,8 +2696,22 @@ Class Vector4D<T> Extends Vector3D<T>
 		Return New Vector4D<T>(Self)
 	End
 	
-	Method MakeBetween4D:Vector4D<T>(V:Vector4D<T>)
-		Return Vector4D<T>(MakeBetween(V))
+	#If Not VECTOR_SHARE_OPTIMIZATIONS
+		Method MakeBetween:Vector<T>(V:Vector<T>)
+			Return MakeBetween4D(V)
+		End
+	#End
+	
+	Method MakeBetween4D:Vector4D<T>(V:Vector<T>)
+		' Local variable(s):
+		
+		' Generate a new vector.
+		Local VOUT:= CloneAs4D()
+		
+		VOUT.Subtract(V)
+		
+		' Return the output-vector.
+		Return VOUT
 	End
 	
 	Method ToString:String()
@@ -2768,6 +2854,24 @@ Class ManualVector<T> Extends Vector4D<T>
 	
 	Method CloneAsManualVector:ManualVector<T>()
 		Return New ManualVector<T>(Self)
+	End
+	
+	#If Not VECTOR_SHARE_OPTIMIZATIONS
+		Method MakeBetween:Vector<T>(V:Vector<T>)
+			Return MakeBetweenManualVectors(V)
+		End
+	#End
+	
+	Method MakeBetweenManualVectors:ManualVector<T>(V:Vector<T>)
+		' Local variable(s):
+		
+		' Generate a new vector.
+		Local VOUT:= CloneAsManualVector()
+		
+		VOUT.Subtract(V)
+		
+		' Return the output-vector.
+		Return VOUT
 	End
 	
 	Method Index:T[]()
