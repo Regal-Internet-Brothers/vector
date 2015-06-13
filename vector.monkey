@@ -352,6 +352,10 @@ Interface Vector<T>
 	Method DeltaAdd:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method DeltaAdd:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
+	Method DeltaSubtract:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method DeltaSubtract:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
+	Method DeltaSubtract:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	
 	Method Decelerate:Void(Deceleration:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method Accelerate:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
@@ -954,7 +958,7 @@ Class AbstractVector<T> Implements Vector<T>
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = DeltaAddNumbers(Data[Index], A[Index], Scalar)
 			#Else
-				Data[Index] += A[Index] * Scalar
+				Data[Index] += (A[Index] * Scalar)
 			#End
 		Next
 		
@@ -973,11 +977,53 @@ Class AbstractVector<T> Implements Vector<T>
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = DeltaAddNumbers(Data[Index], F, Scalar)
 			#Else
-				Data[Index] += F * Scalar
+				Data[Index] += (F * Scalar)
 			#End
 		Next
 		
 		Return
+	End
+	
+	Method DeltaSubtract:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		DeltaSubtract(V.Data, Scalar, VData_Length, VData_Offset)
+		
+		Return
+	End
+	
+	Method DeltaSubtract:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		' Local variable(s):
+		Local A_RawLength:= A.Length()
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DeltaSubtractNumbers(Data[Index], A[Index], Scalar)
+			#Else
+				Data[Index] -= (A[Index] * Scalar)
+			#End
+		Next
+		
+		Return
+	End
+	
+	Method DeltaSubtract:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+		' Local variable(s):
+		Local VData_RawLength:= Data.Length()
+		
+		If (VData_Length = AUTO) Then
+			VData_Length = VData_RawLength
+		Endif
+		
+		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DeltaSubtractNumbers(Data[Index], F, Scalar)
+			#Else
+				Data[Index] -= (F * Scalar)
+			#End
+		Next
 	End
 	
 	Method Decelerate:Void(Deceleration:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1325,7 +1371,7 @@ Class AbstractVector<T> Implements Vector<T>
 			
 			So, if you don't want an object to be generated, you should give this pre-allocated vectors of some kind.
 	
-			Those temporary vectors should be either able to be resized which needed (The standard implementations here do this),
+			Those temporary vectors should be either able to be resized when needed (The standard implementations here do this),
 			or they'll need to be the same sizes as the associated vectors.
 			
 			* The 'V_Length' and 'V_Offset' arguments are referring to the 'V' argument.

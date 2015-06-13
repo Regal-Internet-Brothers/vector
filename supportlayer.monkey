@@ -118,6 +118,14 @@ End
 		Return FirstNumber + (SecondNumber * Scalar)
 	End
 	
+	Function DeltaSubtractNumbers:Int(FirstNumber:Int, SecondNumber:Int, Scalar:Int)
+		Return FirstNumber - (SecondNumber * Scalar)
+	End
+	
+	Function DeltaSubtractNumbers:Float(FirstNumber:Float, SecondNumber:Float, Scalar:Float)
+		Return FirstNumber - (SecondNumber * Scalar)
+	End
+	
 	#If Not MONKEYLANG_EXPLICIT_BOXES
 		Function DeltaAddNumbers:IntObject(IO:IntObject, Amount:IntObject, Scalar:IntObject)
 			#If VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY
@@ -136,6 +144,26 @@ End
 				Return FO
 			#Else
 				Return New FloatObject(FO.ToFloat() + (Amount.ToFloat() * Scalar.ToFloat()))
+			#End
+		End
+		
+		Function DeltaSubtractNumbers:IntObject(IO:IntObject, Amount:IntObject, Scalar:IntObject)
+			#If VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY
+				IO.value -= (Amount.ToInt() * Scalar.ToInt())
+				
+				Return IO
+			#Else
+				Return New IntObject(IO.ToInt() - (Amount.ToInt() * Scalar.ToInt()))
+			#End
+		End
+		
+		Function DeltaSubtractNumbers:FloatObject(FO:FloatObject, Amount:FloatObject, Scalar:FloatObject)
+			#If VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY
+				FO.value -= (Amount.ToFloat() * Scalar.ToFloat())
+				
+				Return FO
+			#Else
+				Return New FloatObject(FO.ToFloat() - (Amount.ToFloat() * Scalar.ToFloat()))
 			#End
 		End
 	#End
