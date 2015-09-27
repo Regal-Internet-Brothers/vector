@@ -4,8 +4,10 @@ Public
 
 #Rem
 	TODO:
-		* Change several uses of "Data.Length()" to use the 'Size' property.
+		* Change several uses of "Data.Length" to use the 'Size' property.
 		* Remove the limitation of not being able to offset the internal-data of the active vector properly. (Horribly complicated)
+		* Rewrite the current "AUTO" based system; overload hell.
+		* Look over existing comments and documentation.
 		
 	COMMAND NAMING CONVENTIONS:
 		* The names of commands (Methods, functions, etc) usually indicate the return value of said command.
@@ -17,7 +19,7 @@ Public
 		
 		* Most methods (Unless explicitly stated otherwise) will affect the vector they're used from.
 		
-		For example, the 'Add' command found in the 'AbstractVector' class does not produce a vector of any kind.
+		For example, the 'Add' command found in the 'VectorModel' class does not produce a vector of any kind.
 		This command only affects its own object's ('Self') data, meaning it will mutate based on the input.
 		
 		However, it will likely not mutate the input itself.
@@ -100,11 +102,6 @@ Public
 #VECTOR_SUPPORTLAYER_TYPEFIXES = VECTOR_TYPEFIXES
 
 #VECTOR_ZERO_WITH_NIL = True
-#VECTOR_GROW_ON_ACCESS = True
-#VECTOR_ALLOW_EXACT_GROWTH = True
-#VECTOR_SMART_GROW = True
-#VECTOR_TOSTRING_USE_GENERIC_UTIL = False ' True
-#VECTOR_LEGACY_NAME_STRINGS = False
 
 #Rem
 	Basically, if you disable this, class-specific
@@ -134,13 +131,6 @@ Public
 
 #VECTOR_SHARE_OPTIMIZATIONS = True
 
-' Determine which route should be used for class-name storage:
-#If LANG = "cpp"
-	#VECTOR_CONSTANT_NAME_STRINGS = False
-#Else
-	#VECTOR_CONSTANT_NAME_STRINGS = True
-#End
-
 #Rem
 	These variables toggle specific checks which may improve
 	program stability and sometimes, even performance.
@@ -148,62 +138,36 @@ Public
 	this module, don't bother changing these.
 #End
 
+#VECTOR_SAFETY = True ' False
+
 #If CONFIG = "debug"
-	#VECTOR_SAFETY = True
 	#VECTOR_NUMBER_SAFETY = True
-#Else
-	#VECTOR_SAFETY = True ' False
-	#VECTOR_NUMBER_SAFETY = False
 #End
 
-#Rem
-	Alternate division can sometimes improve performance,
-	the default state of this variable is "undefined".
-	
-	This means I may change the default state
-	of this functionality at some point in the future.
-#End
-
-#If Not VECTOR_NUMBER_SAFETY And CONFIG = "release"
-	#VECTOR_ALTERNATE_DIVISION = True
-#Else
-	#VECTOR_ALTERNATE_DIVISION = False
-#End
-
-' This is just a backup check:
-#If Not VECTOR_NUMBER_SAFETY
-	#Rem
-		This functionality can potentially improve performance on some systems.
-		Basically, if this is enabled, this module will negate numbers using multiplication.
-		
-		I do not currently recommend this strategy, as it's
-		really just something the compiler should be handling.
-	#End
-	
-	#VECTOR_ALTERNATE_NEGATE = False ' True
-#End
+' If this is enabled, the standard I/O methods will be implemented.
+#VECTOR_ALLOW_SERIALIZATION = True
 
 ' Imports (Public):
-
-' ImmutableOctet:
-Import boxutil
-Import util
-Import ioelement
-Import sizeof
+' Nothing so far.
 
 ' Imports (Private):
 Private
 
-' BRL:
+' External:
+Import util
+Import sizeof
+Import boxutil
+Import ioelement
+
 Import brl.stream
+
+' Internal:
+Import supportlayer
 
 Public
 
 ' The following operations must be done in order to configure the module(s) imported afterword:
 #If VECTOR_SUPPORTLAYER_TYPEFIXES
-	' Enabling this could cause some performance and/or garbage-generation problems.
-	#VECTOR_DELEGATE_SUPPORTLAYER = False
-	
 	#Rem
 		DESCRIPTION:
 			* The support layer's "memory over-optimization" functionality basically
@@ -218,77 +182,17 @@ Public
 			This module (On the other hand) is designed to support this feature.
 	#End
 	
-	#VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY = (BOXUTIL_IMPLEMENTED And Not VECTOR_DELEGATE_SUPPORTLAYER)
+	#VECTOR_SUPPORTLAYER_OVEROPTIMIZE_MEMORY = (BOXUTIL_IMPLEMENTED)
 #End
 
-' Imports (Other):
-#If Not VECTOR_DELEGATE_SUPPORTLAYER
-	Private
-#End
-
-Import supportlayer
-
-#If Not VECTOR_DELEGATE_SUPPORTLAYER
-	Public
-#End
-
-' Check which modules were implemented, then perform various operations accordingly:
-
-' These checks are mainly for optional functionality:
-#If BRL_STREAM_IMPLEMENTED
-	' If this is enabled, the standard I/O methods will be implemented.
-	#VECTOR_ALLOW_SERIALIZATION = True
-#End
-
-' Check if serialization was enabled, and if we were able to find the 'ioelement' module:
-#If VECTOR_ALLOW_SERIALIZATION And IOELEMENT_IMPLEMENTED
-	' If enabled, this will allow the standard vector implementation
-	' to be compliant with the 'SerializableElement' interface.
-	#VECTOR_SUPPORT_IOELEMENT = True
-#End
-
-' Check if we should support the 'sizeof' module:
-#If SIZEOF_IMPLEMENTED
-	#VECTOR_SUPPORT_SIZEOF = True
-#End
-
-' Global variable(s) (Public):
-' Nothing so far.
-
-' Global variable(s) (Private):
-Private
-
-' Class name-string instances:
-#If Not VECTOR_CONSTANT_NAME_STRINGS
-	Global AbstractVector_Name_Str:String = "Vector (Abstract)"
-	Global Vector2D_Name_Str:String = "Vector(2D)"
-	Global Vector3D_Name_Str:String = "Vector(3D)"
-	Global Vector4D_Name_Str:String = "Vector(4D)"
-	Global ManualVector_Name_Str:String = "Vector"
-#End
-
-Public
-
-' Constant variable(s) (Public):
+' Constant variable(s):
 Const VECTOR_AUTO:= UTIL_AUTO
 
 ' Property data-positions:
 Const VECTOR_XPOSITION:= 0
 Const VECTOR_YPOSITION:= 1
 Const VECTOR_ZPOSITION:= 2
-
-' Constant variable(s) (Private):
-Private
-
-#If VECTOR_CONSTANT_NAME_STRINGS
-	Const AbstractVector_Name_Str:String = "Vector (Abstract)"
-	Const Vector2D_Name_Str:String = "Vector(2D)"
-	Const Vector3D_Name_Str:String = "Vector(3D)"
-	Const Vector4D_Name_Str:String = "Vector(4D)"
-	Const ManualVector_Name_Str:String = "Vector"
-#End
-
-Public
+Const VECTOR_WPOSITION:= 3
 
 ' Interfaces:
 
@@ -310,14 +214,11 @@ Interface Vector<T>
 	Const XPOS:= VECTOR_XPOSITION
 	Const YPOS:= VECTOR_YPOSITION
 	Const ZPOS:= VECTOR_ZPOSITION
+	Const WPOS:= VECTOR_WPOSITION
 	
 	Const AUTO:= VECTOR_AUTO
 	
-	' Methods (Public):
-	
-	' Conversion commands:
-	Method ToString:String()
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=True)
+	' Methods:
 	
 	' General purpose commands:
 	Method Clone:Vector<T>()
@@ -325,13 +226,8 @@ Interface Vector<T>
 	Method Copy:Void(V:Vector<T>, FitVector:Bool)
 	Method Copy:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
 	
-	Method Copy:Void(Info:T[], FitInfo:Bool)
-	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS, FitInfo:Bool=False)
-	
-	Method GetData:T(Index:Int)
-	Method GetData:T[]()
-	
-	Method SetData:Void(Index:Int, Info:T)
+	Method Copy:Void(Value:T[], FitValue:Bool)
+	Method Copy:Void(Value:T[], Size:Int=AUTO, Offset:Int=XPOS, FitValue:Bool=False)
 	
 	' Mathematical commands:
 	Method Zero:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -394,7 +290,7 @@ Interface Vector<T>
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 	Method DotProductNormalized:T(V:Vector<T>)
 	
-	Method SubtractTowardsZero:Void(Time:T=AbstractVector<T>.ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
+	Method SubtractTowardsZero:Void(Time:T=VectorModel<T>.ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
 	Method ProjectionScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -423,20 +319,10 @@ Interface Vector<T>
 	
 	' This does not have to be legitimately implemented.
 	' Even if you were to implement it, it's not going to be efficient.
-	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
 	
-	' Methods (Private):
-	Private
-	
-	Method Resize:Bool()
-	Method Resize:Bool(Size:Int)
-	
-	Method Grow:Bool(GrowthIndex:Int=AUTO)
-	Method ControlledGrow:Bool(Index:Int=AUTO)
-	
-	Public
-	
-	' Properties (Public):
+	' Properties:
+	Method Data:T[]() Property
 	Method Size:Int() Property
 	
 	' This isn't based on default arguments due to issues with the type of 'T'.
@@ -445,31 +331,17 @@ Interface Vector<T>
 	Method Length:T(VData_Length:Int, VData_Offset:Int) Property
 	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
 	Method Length:Void(Value:T) Property
-	
-	Method X:T() Property
-	Method X:Void(Info:T) Property
-	
-	' Properties (Private):
-	Private
-	
-	Method Data:T[]() Property
-	
-	Public
 End
 
 ' Classes:
-#If VECTOR_SUPPORT_IOELEMENT
-Class AbstractVector<T> Implements Vector<T>, SerializableElement
-#Else
-Class AbstractVector<T> Implements Vector<T>
-#End
+Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 	' Constant variable(s):
 	
 	' The position of the 'X' property.
-	Const XPOS:= Vector<T>.XPOS
+	Const XPOS:= VECTOR_XPOSITION
 	
 	' The size of this vector-type.
-	Const VECTORSIZE:Int = 1
+	Const INTERNAL_SIZE:Int = 1
 	
 	' General:
 	Const AUTO:= VECTOR_AUTO
@@ -477,21 +349,10 @@ Class AbstractVector<T> Implements Vector<T>
 	' Error template(s):
 	Const VECTOR_GENERIC_ERROR_TEMPLATE:String = "{VECTOR} {ERROR}: "
 	
-	' Defaults:
-	Const Default_ExactGrowthThreshold:Int = 16
-	
-	' Boleans / Flags:
-	Const Default_ToString_FixErrors:Bool = True
-	
 	' Global variable(s):
 	
 	' The default value of the type specified.
 	Global NIL:T
-	
-	#If VECTOR_LEGACY_NAME_STRINGS
-		' The name of this class.
-		Global Name_Str:= AbstractVector_Name_Str
-	#End
 	
 	#If VECTOR_ZERO_WITH_NIL
 		Global ZERO:= NIL
@@ -505,23 +366,9 @@ Class AbstractVector<T> Implements Vector<T>
 	Global FULL_ROTATION_IN_DEGREES:T = T(360)
 	Global HALF_FULL_ROTATION_IN_DEGREES:T = T(180.0)
 	
-	' Defaults:
-	
-	' The default multiplier used for container growth.
-	Global Default_GrowthMultiplier:Float = 1.5 ' 2.0
-	
-	' Booleans / Flags:
-	
-	' This represents the default auto-grow flag for all vector classes for the current type ('T').
-	Global Default_AutoGrow:Bool = False
-	
 	' Functions:
 	Function Name:String()
-		#If VECTOR_LEGACY_NAME_STRINGS
-			Return Name_Str
-		#Else
-			Return AbstractVector_Name_Str
-		#End
+		Return "Vector (Abstract)"
 	End
 	
 	Function DotProductNormalized:T(V1:Vector<T>, V2:Vector<T>)
@@ -539,16 +386,16 @@ Class AbstractVector<T> Implements Vector<T>
 		CreateData(Size)
 	End
 	
-	Method New(Info:T[], CopyInfo:Bool)
-		If (CopyInfo) Then
-			Assign(Info)
+	Method New(Value:T[], CopyValue:Bool)
+		If (CopyValue) Then
+			Assign(Value)
 		Else
-			AssignByRef(Info)
+			AssignByRef(Value)
 		Endif
 	End
 	
-	Method New(Info:T[], Size:Int=AUTO, Offset:Int=XPOS)
-		Assign(Info, Size, Offset)
+	Method New(Value:T[], Size:Int=AUTO, Offset:Int=XPOS)
+		Assign(Value, Size, Offset)
 	End
 	
 	Method New(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS)
@@ -569,24 +416,12 @@ Class AbstractVector<T> Implements Vector<T>
 		Assign(V, Size, Offset, FitVector)
 	End
 	
-	' Constructor(s) (Private):
-	Private
-	
-	Method CreateData:Void(Size:Int)
-		Data = New T[Size]
-		
-		Return
-	End
-	
-	Public
-
-	' Methods:
 	Method Clone:Vector<T>()
 		Return CloneAsAbstract()
 	End
 	
-	Method CloneAsAbstract:AbstractVector<T>()
-		Return New AbstractVector<T>(Self)
+	Method CloneAsAbstract:VectorModel<T>()
+		Return New VectorModel<T>(Self)
 	End
 	
 	Method Clone:Void(V:Vector<T>, FitVector:Bool)
@@ -601,6 +436,38 @@ Class AbstractVector<T> Implements Vector<T>
 		Return
 	End
 	
+	' Constructor(s) (Protected):
+	Protected
+	
+	Method CreateData:Void(Size:Int)
+		Data = New T[Size]
+		
+		Return
+	End
+	
+	Public
+	
+	' Methods:
+	Method ToString:String()
+		Return ("X: '" + String(X) + "'")
+	End
+	
+	' This performs a raw equality check; use at your own risk.
+	Method Equals:Bool(V:Vector<T>)
+		If (V.Size <> Self.Size) Then
+			Return False
+		Endif
+		
+		For Local I:= 0 Until V.Size
+			If (Data[I] <> V.Data[I]) Then
+				Return False
+			Endif
+		Next
+		
+		' Return the default response.
+		Return True
+	End
+	
 	Method Copy:Void(V:Vector<T>, FitVector:Bool)
 		Clone(V, FitVector)
 		
@@ -613,14 +480,14 @@ Class AbstractVector<T> Implements Vector<T>
 		Return
 	End
 	
-	Method Copy:Void(Info:T[], FitInfo:Bool)
-		Copy(Info, AUTO, XPOS, FitInfo)
+	Method Copy:Void(Value:T[], FitValue:Bool)
+		Copy(Value, AUTO, XPOS, FitValue)
 		
 		Return
 	End
 	
-	Method Copy:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS, FitInfo:Bool=False)
-		Assign(Info, Size, Offset, FitInfo)
+	Method Copy:Void(Value:T[], Size:Int=AUTO, Offset:Int=XPOS, FitValue:Bool=False)
+		Assign(Value, Size, Offset, FitValue)
 		
 		Return
 	End
@@ -642,164 +509,34 @@ Class AbstractVector<T> Implements Vector<T>
 		Return
 	End
 	
-	Method Assign:Void(Info:T[], FitInfo:Bool)
-		Assign(Info, AUTO, XPOS, FitInfo)
+	Method Assign:Void(Value:T[], FitValue:Bool)
+		Assign(Value, AUTO, XPOS, FitValue)
 		
 		Return
 	End
 	
-	Method Assign:Void(Info:T[], Size:Int=AUTO, Offset:Int=XPOS, FitInfo:Bool=True)
+	Method Assign:Void(Value:T[], Size:Int=AUTO, Offset:Int=XPOS, FitValue:Bool=True)
 		If (Size = AUTO) Then
-			Size = Info.Length()
+			Size = Value.Length
 		Endif
 		
-		'Self.Data = GenericUtilities<T>.CopyArray(Info, Self.Data, FitInfo)
-		Self.Data = GenericUtilities<T>.CopyArray(Info, Self.Data, Offset, XPOS, Size, AUTO, FitInfo)
+		'Self.Data = GenericUtilities<T>.CopyArray(Value, Self.Data, FitValue)
+		Self.Data = GenericUtilities<T>.CopyArray(Value, Self.Data, Offset, XPOS, Size, AUTO, FitValue)
 		
-		'AssignByRef(Info.Resize(Size))
+		'AssignByRef(Value.Resize(Size))
 		
 		Return
 	End
 	
-	Method AssignByRef:Void(Info:T[])
-		Self.Data = Info
+	Method AssignByRef:Void(Value:T[])
+		Self.Data = Value
 		
 		Return
-	End
-	
-	Method GetData:T(Index:Int)
-		#If VECTOR_SAFETY
-			If (Index >= Size) Then
-				#If VECTOR_GROW_ON_ACCESS
-					If (AutoGrow) Then
-						ControlledGrow(Index)
-					Else
-				#End
-						#If CONFIG = "debug"
-							VectorError("Attempted to access an invalid or non-existent element.")
-						#End
-						
-						Return NIL
-				#If VECTOR_GROW_ON_ACCESS
-					Endif
-				#End
-			Endif
-			
-			If (Index < XPOS) Then
-				#If CONFIG = "debug"
-					VectorError("Attempted to access protected memory.")
-				#End
-				
-				Return NIL
-			Endif
-		#End
-		
-		Return Self.Data[Index]
-	End
-	
-	Method GetData:T[]()
-		Return Data
-	End
-	
-	Method SetData:Void(Index:Int, Info:T)
-		If (AutoGrow) Then
-			ControlledGrow(Index)
-		Endif
-		
-		#If VECTOR_SAFETY
-			#If CONFIG = "debug"
-				If (Index >= Size) Then
-					DebugStop()
-				Endif
-			#End
-		#End
-		
-		Self.Data[Index] = Info		
-		
-		Return
-	End
-	
-	Method Resize:Bool(Size:Int)
-		Self.Data = Data.Resize(Size)
-	
-		' Return the default response.
-		Return True
-	End
-	
-	Method Resize:Bool()
-		Self.Data = Self.Data.Resize(Size * GrowthMultiplier)
-		
-		' Return the default response.
-		Return True
-	End
-	
-	' This command accepts an index, not a size.
-	Method Grow:Bool(GrowthIndex:Int=AUTO)
-		If (GrowthIndex = AUTO) Then
-			Return Resize()
-		Endif
-		
-		#If VECTOR_SAFETY
-			If (GrowthIndex < Size) Then
-				Return False
-			Endif
-		#End
-		
-		Local Growth:Int = (GrowthIndex-(LastIndex))
-		
-		' If we're allowed to do so, resize exactly:
-		#If VECTOR_ALLOW_EXACT_GROWTH
-			If (Growth >= ExactGrowthThreshold) Then
-				Return Resize(GrowthIndex+1)
-			Endif
-		#End
-		
-		' If we get to this point, simply use standard resizing.
-		Return Resize()
-	End
-	
-	Method ControlledGrow:Bool(Index:Int=AUTO)
-		' Local variable(s):
-		Local Size:= Self.Size
-		
-		' Check for errors:
-		#If VECTOR_SAFETY
-			If (Index <> AUTO And Index < Size) Then
-				Return False
-			Endif
-		#End
-		
-		#If VECTOR_SMART_GROW
-			' If we were using a different memory model, this would work well:
-			#Rem
-				Local Response:Bool = False
-				
-				' Continue growing until the internal container is big enough:
-				Repeat
-					Response = Grow()
-					
-					' Make sure we were able to grow:
-					If (Not Response) Then
-						' We weren't able to grow, return a negative response.
-						Return False
-					Endif
-				Until (Size > Index)
-			#End
-			
-			' Grow to the desired size.
-			Return Grow(Index)
-		#Else
-			If (Index = AUTO) Then
-				Return Resize(Size+1)
-			Endif
-			
-			Return Resize(Index+1)
-		#End
 	End
 	
 	Method Zero:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -814,7 +551,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Absolute:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -829,7 +566,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Negate:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -851,7 +588,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method ApplyMin:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -866,7 +603,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method ApplyMax:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -881,7 +618,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method ApplyClamp:Void(MinValue:T, MaxValue:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -903,13 +640,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Add:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = AddNumbers(Data[Index], A[Index])
 			#Else
@@ -923,7 +660,7 @@ Class AbstractVector<T> Implements Vector<T>
 	' This overload adds by scalar, instead of by vector.
 	Method Add:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -948,13 +685,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method DeltaAdd:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = DeltaAddNumbers(Data[Index], A[Index], Scalar)
 			#Else
@@ -967,7 +704,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method DeltaAdd:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -992,13 +729,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method DeltaSubtract:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = DeltaSubtractNumbers(Data[Index], A[Index], Scalar)
 			#Else
@@ -1011,7 +748,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method DeltaSubtract:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -1028,13 +765,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Decelerate:Void(Deceleration:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
 		Endif
 		
-		Local VelocityLength:= Length()
+		Local VelocityLength:= Length
 		
 		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
@@ -1068,13 +805,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Subtract:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = SubtractNumber(Data[Index], A[Index])
 			#Else
@@ -1088,7 +825,7 @@ Class AbstractVector<T> Implements Vector<T>
 	' Subtract by scalar, instead of by vector.
 	Method Subtract:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -1113,36 +850,17 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Divide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			#If Not VECTOR_ALTERNATE_DIVISION
-				#If VECTOR_SUPPORTLAYER_TYPEFIXES
-					Data[Index] = DivideNumber(Data[Index], A[Index])
-				#Else
-					Data[Index] /= A[Index]
-				#End
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DivideNumber(Data[Index], A[Index])
 			#Else
-				' Local variable(s):
-				#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
-					Local A_On_Index:= A[Index]
-				#Else
-					Local A_On_Index:= InnerValue(A[Index])
-				#End
-				
-				#If VECTOR_NUMBER_SAFETY
-					If (A_On_Index <> NIL) Then
-				#End
-						Data[Index] *= (ONE/A_On_Index)
-				#If VECTOR_NUMBER_SAFETY
-					Else
-						Data[Index] = NIL
-					Endif
-				#End
+				Data[Index] /= A[Index]
 			#End
 		Next
 		
@@ -1150,32 +868,20 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method Divide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		#If VECTOR_ALTERNATE_DIVISION
-			#If VECTOR_NUMBER_SAFETY
-				If (F <> NIL) Then
+		' Local variable(s):
+		Local VData_RawLength:= Data.Length
+		
+		If (VData_Length = AUTO) Then
+			VData_Length = VData_RawLength
+		Endif
+		
+		For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
+			#If VECTOR_SUPPORTLAYER_TYPEFIXES
+				Data[Index] = DivideNumber(Data[Index], F)
+			#Else
+				Data[Index] /= F
 			#End
-					Multiply(ONE/F, VData_Length, VData_Offset)
-			#If VECTOR_NUMBER_SAFETY
-				Else
-					Zero(VData_Length, VData_Offset)
-				Endif
-			#End
-		#Else
-			' Local variable(s):
-			Local VData_RawLength:= Data.Length()
-			
-			If (VData_Length = AUTO) Then
-				VData_Length = VData_RawLength
-			Endif
-			
-			For Local Index:= VData_Offset Until Min(VData_Length, VData_RawLength)
-				#If VECTOR_SUPPORTLAYER_TYPEFIXES
-					Data[Index] = DivideNumber(Data[Index], F)
-				#Else
-					Data[Index] /= F
-				#End
-			Next
-		#End
+		Next
 		
 		Return
 	End
@@ -1188,13 +894,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Multiply:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = MultiplyNumbers(Data[Index], A[Index])
 			#Else
@@ -1207,7 +913,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Multiply:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -1232,7 +938,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method LinearInterpolation:Void(A:T[], t:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
@@ -1242,7 +948,7 @@ Class AbstractVector<T> Implements Vector<T>
 			t = ClampNumber(t, ZERO, ONE)
 		#End
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Data[Index] = DeltaAddNumbers(Data[Index], T(InnerValue(A[Index])-InnerValue(Data[Index])), t)
 			#Else
@@ -1281,13 +987,13 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method IsEqualTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			' Check if the two elements are equal:
 			If (A[Index] <> Data[Index]) Then
 				' The elements are not equal, return a negative response.
@@ -1308,17 +1014,17 @@ Class AbstractVector<T> Implements Vector<T>
 		Local D:T = ZERO
 		
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
 		Endif
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
-				D += Pow(InnerValue(A[Index])-InnerValue(Data[Index]), TWO)
+				D += Sq(InnerValue(A[Index])-InnerValue(Data[Index]))
 			#Else
-				D += Pow(A[Index]-Data[Index], TWO)
+				D += Sq(A[Index]-Data[Index])
 			#End
 		Next
 		
@@ -1341,7 +1047,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
@@ -1349,7 +1055,7 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		Local Sum:T = NIL
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
 			#If VECTOR_SUPPORTLAYER_TYPEFIXES
 				Sum += (InnerValue(Data[Index])*InnerValue(A[Index]))
 			#Else
@@ -1392,13 +1098,13 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		' Generate or mutate the two vectors:
 		If (FTV = Null) Then
-			FTV = New AbstractVector<T>(Self, VData_Length, VData_Offset)
+			FTV = New VectorModel<T>(Self, VData_Length, VData_Offset)
 		Else
 			FTV.Copy(Self, VData_Length, VData_Offset)
 		Endif
 		
 		If (STV = Null) Then
-			STV = New AbstractVector<T>(V, STV_Length, STV_Offset)
+			STV = New VectorModel<T>(V, STV_Length, STV_Offset)
 		Else
 			STV.Copy(V, STV_Length, STV_Offset)
 		Endif
@@ -1413,7 +1119,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method SubtractTowardsZero:Void(Time:T=ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 		' Local variable(s):
-		Local VData_RawLength:= Data.Length()
+		Local VData_RawLength:= Data.Length
 		
 		If (VData_Length = AUTO) Then
 			VData_Length = VData_RawLength
@@ -1475,12 +1181,12 @@ Class AbstractVector<T> Implements Vector<T>
 		' Local variable(s):
 		
 		' Generate a new vector.
-		Local VOUT:= Clone()
+		Local VectorOutput:= Clone()
 		
-		VOUT.Subtract(V)
+		VectorOutput.Subtract(V)
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method AngleBetween:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
@@ -1509,7 +1215,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, TempVector:Vector<T>=Null)
 		If (TempVector = Null) Then
-			TempVector = New AbstractVector(A, A_Length, A_Offset)
+			TempVector = New VectorModel(A, A_Length, A_Offset)
 		Else
 			TempVector.Copy(A, A_Length, A_Offset)
 		Endif
@@ -1555,20 +1261,8 @@ Class AbstractVector<T> Implements Vector<T>
 		Return OutputVector
 	End
 	
-	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
 		Return Null
-	End
-	
-	Method ToString:String()
-		Return ToString(False)
-	End
-	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=Default_ToString_FixErrors)
-		If (Not GiveName) Then
-			Return "X:" + Space + SingleQuote + String(GetData(XPOS)) + SingleQuote
-		Endif
-		
-		Return Name()
 	End
 	
 	#If VECTOR_ALLOW_SERIALIZATION
@@ -1580,7 +1274,7 @@ Class AbstractVector<T> Implements Vector<T>
 			Return Write(S)
 		End
 		
-		Method Read:Bool(S:Stream, ReadSize:Int=0)
+		Method Read:Bool(S:Stream, ReadSize:Int)
 			' Check for errors:
 			#If VECTOR_SAFETY
 				If (S = Null Or S.Eof()) Then
@@ -1588,14 +1282,14 @@ Class AbstractVector<T> Implements Vector<T>
 				Endif
 			#End
 			
-			If (ReadSize = 0) Then
-				ReadSize = Self.Data.Length()
-			Endif
-			
 			GenericUtilities<T>.Read(S, Self.Data, ReadSize)
 			
 			' Return the default response.
 			Return True
+		End
+		
+		Method Read:Bool(S:Stream)
+			Return Read(S, Self.Data.Length)
 		End
 		
 		Method Write:Bool(S:Stream, WriteSize:Bool=False)
@@ -1613,41 +1307,23 @@ Class AbstractVector<T> Implements Vector<T>
 		End
 	#End
 	
-	' Properties (Public):
-	Method Value:T() Property
-		Return X()
+	' Properties:
+	Method Data:T[]() Property
+		Return Self._Data
 	End
 	
-	Method Value:Void(Info:T) Property
-		X(Info)
+	Method Data:Void(Input:T[]) Property
+		Self._Data = Input
 		
 		Return
-	End
-	
-	Method R:T() Property
-		Return X()
-	End
-	
-	Method R:Void(Info:T) Property
-		X(Info)
-		
-		Return
-	End
-	
-	Method Left:T() Property
-		Return X()
-	End
-	
-	Method Left:Void(Info:T) Property
-		X(Info)
 	End
 	
 	Method X:T() Property
-		Return GetData(XPOS)
+		Return Data[XPOS]
 	End
 	
-	Method X:Void(Info:T) Property
-		SetData(XPOS, Info)
+	Method X:Void(Value:T) Property
+		Data[XPOS] = Value
 	
 		Return
 	End
@@ -1662,7 +1338,7 @@ Class AbstractVector<T> Implements Vector<T>
 	
 	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
 		' Local variable(s):
-		Local A_RawLength:= A.Length()
+		Local A_RawLength:= A.Length
 		
 		If (A_Length = AUTO) Then
 			A_Length = A_RawLength
@@ -1670,12 +1346,8 @@ Class AbstractVector<T> Implements Vector<T>
 		
 		Local Sum:T = ZERO
 		
-		For Local Index:= A_Offset Until Min(Data.Length(), Min(A_RawLength, A_Length))
-			#If Not VECTOR_SUPPORTLAYER_TYPEFIXES
-				Sum += (A[Index]*A[Index]) ' Pow(A[Index], TWO)
-			#Else
-				Sum += Sq(A[Index])
-			#End
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
+			Sum += Sq(A[Index])
 		Next
 		
 		Return Sqrt(Sum)
@@ -1707,165 +1379,37 @@ Class AbstractVector<T> Implements Vector<T>
 	End
 	
 	Method Size:Int() Property
-		Return Data.Length()
+		Return Data.Length
 	End
 	
-	Method Size:Void(Input:Int) Property
-		If (AutoGrow) Then
-			ControlledGrow(Input+1)
-		Endif
-		
-		Return
+	Method SizeInBytes:Int() Property
+		Return (Size * sizeof.SizeOf(X))
 	End
-	
-	#If VECTOR_SUPPORT_SIZEOF
-		Method SizeInBytes:Int() Property
-			Return (Size * sizeof.SizeOf(X))
-		End
-	#End
 	
 	Method LastIndex:Int() Property
-		Return Size-1
+		Return (Size-1)
 	End
-	
-	Method GrowthMultiplier:Float() Property
-		Return Default_GrowthMultiplier
-	End
-	
-	Method AutoGrow:Bool() Property
-		Return Self._AutoGrow
-	End
-	
-	Method ExactGrowthThreshold:Int() Property
-		Return Default_ExactGrowthThreshold
-	End
-	
-	Method ExactGrowthThreshold:Void(Input:Int) Property
-		' Nothing so far.
-		
-		Return
-	End
-	
-	' Properties (Private):
-	Private
-	
-	Method Data:T[]() Property
-		Return Self._Data
-	End
-	
-	Method Data:Void(Input:T[]) Property
-		Self._Data = Input
-		
-		Return
-	End
-	
-	Method AutoGrow:Void(Input:Bool) Property
-		Self._AutoGrow = Input
-		
-		Return
-	End
-	
-	Public
 	
 	' Fields (Public):
 	' Nothing so far.
 	
-	' Fields (Private):
-	Private
+	' Fields (Protected):
+	Protected
 	
 	' The internal data container.
 	Field _Data:T[]
 	
-	' Booleans / Flags:
-	
-	' I'm not the biggest fan of this, but...
-	Field _AutoGrow:Bool = Default_AutoGrow
-	
 	Public
 End
 
-#Rem
-Class Vector1D<T>
-	' Functions:
-	Function Name:String()
-		Return "Vector(1D)"
-	End
-
-	' Constructor(s):
-	Method New()
-		' Nothing so far.
-	End
-	
-	Method New(Info:T)
-		Self.Data = Info
-	End
-	
-	Method New(V:Vector1D<T>)
-		Self.Data = V.Data
-	End
-	
-	' Methods:
-	Method Clone:Vector1D<T>()
-		Return New Vector1D<T>(Data)
-	End
-	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=Default_ToString_FixErrors)
-		If (Not GiveName) Then
-			Return "Value: " + String(Value())
-		Endif
-		
-		Return Name()
-	End
-
-	' Properties:
-	Method X:T() Property
-		Return Value()
-	End
-	
-	Method X:Void(Info:T) Property
-		Value(Info)
-	
-		Return
-	End
-	
-	Method Value:T() Property
-		Return Data
-	End
-	
-	Method Value:Void(Info:T) Property
-		Self.Data = Info
-	
-		Return
-	End
-	
-	' Fields(Private):
-	Private
-	
-	Field Data:T
-	
-	Public
-End
-#End
-
-Class Vector2D<T> Extends AbstractVector<T>
+Class Vector2D<T> Extends VectorModel<T>
 	' Constant variables:
-	Const YPOS:= Vector<T>.YPOS
-	Const VECTORSIZE:Int = 2
-	
-	' Global variable(s):
-	
-	#If VECTOR_LEGACY_NAME_STRINGS
-		' The name of this class.
-		Global Name_Str:= Vector2D_Name_Str
-	#End
+	Const YPOS:= VECTOR_YPOSITION
+	Const INTERNAL_SIZE:Int = 2
 
 	' Functions:
 	Function Name:String()
-		#If VECTOR_LEGACY_NAME_STRINGS
-			Return Name_Str
-		#Else
-			Return Vector2D_Name_Str
-		#End
+		Return "Vector(2D)"
 	End
 	
 	Function FromInts:Vector2D<T>(X:Int, Y:Int)
@@ -1878,33 +1422,32 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	' Constructor(s):	
 	Method New()
-		Super.New(VECTORSIZE)
+		Super.New(INTERNAL_SIZE)
 	End
 		
 	Method New(Size:Int)
 		Super.New(Size)
 	End
 		
-	Method New(Info:T[], CopyInfo:Bool)
-		Super.New(Info, CopyInfo)
+	Method New(Value:T[], CopyValue:Bool)
+		Super.New(Value, CopyValue)
 	End
 	
-	Method New(Info:T[], Size:Int=VECTORSIZE, Offset:Int=XPOS)
-		Super.New(Info, Size, Offset)
+	Method New(Value:T[], Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
+		Super.New(Value, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+	Method New(V:Vector<T>, Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
 		Super.New(V, Size, Offset)
 	End
 	
-	Method New(X:T, Y:T, VECTORSIZE:Int=Vector2D<T>.VECTORSIZE)
-		Super.New(VECTORSIZE)
+	Method New(X:T, Y:T, INTERNAL_SIZE:Int=Vector2D<T>.INTERNAL_SIZE)
+		Super.New(INTERNAL_SIZE)
 		
 		Self.X = X
 		Self.Y = Y
 	End
-		
-	' Methods (Public):	
+	
 	Method Clone:Vector<T>()
 		Return CloneAs2D()
 	End
@@ -1913,7 +1456,8 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return New Vector2D<T>(Self)
 	End
 	
-	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+	' Methods:
+	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
 		' Local variable(s):
 		Local V2D:= Vector2D<T>(V)
 		Local V2DOut:Vector2D<T>
@@ -1925,9 +1469,9 @@ Class Vector2D<T> Extends AbstractVector<T>
 		#End
 		
 		#If VECTOR_SAFETY
-			If (VOUT <> Null) Then
+			If (VectorOutput <> Null) Then
 		#End
-				V2DOut = Vector2D<T>(VOUT)
+				V2DOut = Vector2D<T>(VectorOutput)
 				
 				#If VECTOR_SAFETY
 					If (V2DOut = Null) Then
@@ -1942,17 +1486,17 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return CrossProduct2D(V2D, V2DOut)
 	End
 	
-	Method CrossProduct2D:Vector2D<T>(V:Vector2D<T>, VOUT:Vector2D<T>=Null)
-		If (VOUT = Null) Then
-			VOUT = New Vector2D<T>(Self)
+	Method CrossProduct2D:Vector2D<T>(V:Vector2D<T>, VectorOutput:Vector2D<T>=Null)
+		If (VectorOutput = Null) Then
+			VectorOutput = New Vector2D<T>(Self)
 		Else
-			VOUT.Copy(Self)
+			VectorOutput.Copy(Self)
 		Endif
 		
 		' Local variable(s):
-		VOUT.X = VOUT.CrossProduct_2D(V)
+		VectorOutput.X = VectorOutput.CrossProduct_2D(V)
 		
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method CrossProduct_2D:T(V:Vector2D<T>, VData_Offset:Int=XPOS) Final
@@ -1965,7 +1509,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Local REAL_Y:= YPOS+A_Offset
 		
 		#If VECTOR_SAFETY
-			If (OutOfBounds(Max(REAL_X, REAL_Y), A.Length())) Then
+			If (OutOfBounds(Max(REAL_X, REAL_Y), A.Length)) Then
 				Return NIL
 			Endif
 		#End
@@ -1991,7 +1535,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	Method Rotate_2D:Void(Angle:T) Final
 		' Local variable(s):
-		Local Length:= Self.Length()
+		Local Length:= Self.Length
 		
 		X = Length * Cos(Angle)
 		Y = Length * Sin(Angle)
@@ -2035,26 +1579,26 @@ Class Vector2D<T> Extends AbstractVector<T>
 		' Local variable(s):
 		
 		' Generate a new 2D vector.
-		Local VOUT:= CloneAs2D()
+		Local VectorOutput:= CloneAs2D()
 		
 		' Rotate the vector.
-		VOUT.AsPerpendicular()
+		VectorOutput.AsPerpendicular()
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method ReversePerpendicular:Vector2D<T>()
 		' Local variable(s):
 		
 		' Generate a new 2D vector.
-		Local VOUT:= CloneAs2D()
+		Local VectorOutput:= CloneAs2D()
 		
 		' Rotate the vector.
-		VOUT.AsReversePerpendicular()
+		VectorOutput.AsReversePerpendicular()
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method LeftNormal:Vector2D<T>()
@@ -2139,12 +1683,12 @@ Class Vector2D<T> Extends AbstractVector<T>
 		' Local variable(s):
 		
 		' Generate a new vector.
-		Local VOUT:= CloneAs2D()
+		Local VectorOutput:= CloneAs2D()
 		
-		VOUT.Subtract(V)
+		VectorOutput.Subtract(V)
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method Divide2D:Vector2D<T>(V:Vector<T>)
@@ -2220,40 +1764,10 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method ToString:String()
-		Return ToString(False)
+		Return (Super.ToString() + ", Y: '" + String(Y) + "'")
 	End
 	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=Default_ToString_FixErrors)
-		If (Not GiveName) Then
-			Return (Super.ToString(False) + Comma + Space + "Y:" + Space + SingleQuote + String(GetData(YPOS)) + SingleQuote)
-		Endif
-		
-		Return Name()
-	End
-	
-	' Methods (Private):
-	Private
-	
-	' The following overloads are here for the sake of privacy:
-	Method Resize:Bool(Size:Int)
-		Return Super.Resize(Size)
-	End
-	
-	Method Resize:Bool()
-		Return Super.Resize()
-	End
-	
-	Method Grow:Bool(GrowthIndex:Int=AUTO)
-		Return Super.Grow(GrowthIndex)
-	End
-	
-	Method ControlledGrow:Bool(Index:Int=AUTO)
-		Return Super.ControlledGrow(Index)
-	End
-	
-	Public
-	
-	' Properties (Public):
+	' Properties:
 	Method Angle:T() Property
 		#If VECTOR_SUPPORTLAYER_TYPEFIXES
 			Return InnerValue(HALF_FULL_ROTATION_IN_DEGREES) - ATan2(-InnerValue(Y), -InnerValue(X))
@@ -2264,7 +1778,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	
 	Method Angle:Void(Input:T) Property
 		' Local variable(s):
-		Local Length:= Self.Length()
+		Local Length:= Self.Length
 		
 		X = Length * Cos(Input)
 		Y = Length * -Sin(Input)
@@ -2290,7 +1804,7 @@ Class Vector2D<T> Extends AbstractVector<T>
 	End
 	
 	Method AlternateAngle:Void(Input:T) Property
-		Local Length:= Self.Length()
+		Local Length:= Self.Length
 		
 		X = Length * Sin(Input)
 		Y = Length * Cos(Input)
@@ -2311,72 +1825,46 @@ Class Vector2D<T> Extends AbstractVector<T>
 		Return AbsoluteNumber(Delta_1D)
 	End
 	
-	Method G:T() Property
-		Return Y()
+	Method Y:T() Property
+		Return Data[YPOS]
 	End
 	
-	Method G:Void(Info:T) Property
-		Y(Info)
+	Method Y:Void(Value:T) Property
+		Data[YPOS] = Value
 		
 		Return
 	End
 	
-	Method Y:T() Property
-		Return GetData(YPOS)
+	' Directional properties:
+	Method Left:T() Property
+		Return X
 	End
 	
-	Method Y:Void(Info:T) Property
-		SetData(YPOS, Info)
+	Method Left:Void(Value:T) Property
+		X = Value
 		
 		Return
 	End
 	
 	Method Right:T() Property
-		Return Y()
+		Return Y
 	End
 	
-	Method Right:Void(Info:T) Property
-		Y(Info)
-	End
-	
-	Method Size:Int() Property
-		Return Super.Size()
-	End
-	
-	' Properties (Private):
-	Private
-	
-	Method Size:Void(Input:Int) Property
-		Super.Size(Input)
+	Method Right:Void(Value:T) Property
+		Y(Value)
 		
 		Return
 	End
-	
-	Public
-	
-	' Fields:
-	' Nothing so far.
 End
 
 Class Vector3D<T> Extends Vector2D<T>
 	' Constant variables:
-	Const ZPOS:= Vector<T>.ZPOS
-	Const VECTORSIZE:Int = 3
-	
-	' Global variable(s):
-	
-	#If VECTOR_LEGACY_NAME_STRINGS
-		' The name of this class.
-		Global Name_Str:= Vector3D_Name_Str
-	#End
+	Const ZPOS:= VECTOR_ZPOSITION
+	Const INTERNAL_SIZE:Int = 3
 	
 	' Functions:
 	Function Name:String()
-		#If VECTOR_LEGACY_NAME_STRINGS
-			Return Name_Str
-		#Else
-			Return Vector3D_Name_Str
-		#End
+		Return "Vector(3D)"
 	End
 	
 	Function FromInts:Vector3D<T>(X:Int, Y:Int, Z:Int)
@@ -2389,27 +1877,27 @@ Class Vector3D<T> Extends Vector2D<T>
 	
 	' Constructor(s):
 	Method New()
-		Super.New(VECTORSIZE)
+		Super.New(INTERNAL_SIZE)
 	End
 	
 	Method New(Size:Int)
 		Super.New(Size)
 	End
 	
-	Method New(Info:T[], CopyInfo:Bool)
-		Super.New(Info, CopyInfo)
+	Method New(Value:T[], CopyValue:Bool)
+		Super.New(Value, CopyValue)
 	End
 	
-	Method New(Info:T[], Size:Int=VECTORSIZE, Offset:Int=XPOS)
-		Super.New(Info, Size, Offset)
+	Method New(Value:T[], Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
+		Super.New(Value, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+	Method New(V:Vector<T>, Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
 		Super.New(V, Size, Offset)
 	End
 	
-	Method New(X:T, Y:T, Z:T=NIL, VECTORSIZE:Int=Vector3D<T>.VECTORSIZE)
-		Super.New(X, Y, VECTORSIZE)
+	Method New(X:T, Y:T, Z:T=NIL, INTERNAL_SIZE:Int=Vector3D<T>.INTERNAL_SIZE)
+		Super.New(X, Y, INTERNAL_SIZE)
 		
 		Self.Z = Z
 	End
@@ -2423,7 +1911,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return New Vector3D<T>(Self)
 	End
 	
-	Method CrossProduct:Vector<T>(V:Vector<T>, VOUT:Vector<T>=Null)
+	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
 		' Local variable(s):
 		Local V3D:= Vector3D<T>(V)
 		Local V3DOut:Vector3D<T>
@@ -2435,9 +1923,9 @@ Class Vector3D<T> Extends Vector2D<T>
 		#End
 		
 		#If VECTOR_SAFETY
-			If (VOUT <> Null) Then
+			If (VectorOutput <> Null) Then
 		#End
-				V3DOut = Vector3D<T>(VOUT)
+				V3DOut = Vector3D<T>(VectorOutput)
 				
 				#If VECTOR_SAFETY
 					If (V3DOut = Null) Then
@@ -2454,16 +1942,16 @@ Class Vector3D<T> Extends Vector2D<T>
 	
 	' If you're dealing with 'Vector3D' objects directly,
 	' then you really should use this command over 'CrossProduct':
-	Method CrossProduct3D:Vector3D<T>(V:Vector3D<T>, VOUT:Vector3D<T>=Null)
-		If (VOUT = Null) Then
-			VOUT = New Vector3D<T>(Self)
+	Method CrossProduct3D:Vector3D<T>(V:Vector3D<T>, VectorOutput:Vector3D<T>=Null)
+		If (VectorOutput = Null) Then
+			VectorOutput = New Vector3D<T>(Self)
 		Else
-			VOUT.Copy(Self)
+			VectorOutput.Copy(Self)
 		Endif
 		
-		VOUT.CrossProduct_3D(V)
+		VectorOutput.CrossProduct_3D(V)
 		
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method CrossProduct_3D:Void(V:Vector3D<T>) Final
@@ -2492,12 +1980,12 @@ Class Vector3D<T> Extends Vector2D<T>
 		' Local variable(s):
 		
 		' Generate a new vector.
-		Local VOUT:= CloneAs3D()
+		Local VectorOutput:= CloneAs3D()
 		
-		VOUT.Subtract(V)
+		VectorOutput.Subtract(V)
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method RotateTowards:Void(V:Vector2D<T>)
@@ -2530,7 +2018,7 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	Method Rotate_2DIn3D:Void(RX:T, RY:T) Final
-		Rotate_2DIn3D(RX, RY, Length())
+		Rotate_2DIn3D(RX, RY, Length)
 		
 		Return
 	End
@@ -2543,7 +2031,7 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	Method Rotate_3D:Void(RX:T, RY:T, RZ:T) Final
-		Rotate_3D(RX, RY, RZ, Length())
+		Rotate_3D(RX, RY, RZ, Length)
 		
 		Return
 	End
@@ -2620,47 +2108,50 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	Method ToString:String()
-		Return ToString(False)
+		Return (Super.ToString() + ", Z: '" + String(Z) + "'")
 	End
 	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=Default_ToString_FixErrors)
-		If (Not GiveName) Then
-			Return (Super.ToString(False) + Comma + Space + "Z:" + Space + SingleQuote + String(GetData(ZPOS)) + SingleQuote)
-		Endif
-		
-		Return Name()
-	End
-	
-	' Properties (Public):
-	Method B:T() Property
-		Return Z()
-	End
-	
-	Method B:Void(Info:T) Property
-		Z(Info)
-		
-		Return
-	End
-	
+	' Properties:
 	Method Z:T() Property
-		Return GetData(ZPOS)
+		Return Data[ZPOS]
 	End
 	
-	Method Z:Void(Info:T) Property
-		SetData(ZPOS, Info)
+	Method Z:Void(Value:T) Property
+		Data[ZPOS] = Value
 		
 		Return
 	End
 	
-	' Properties (Private):
-	Private
+	' Color properties:
+	Method R:T() Property
+		Return X
+	End
 	
-	' Nothing so far.
+	Method R:Void(Value:T) Property
+		X = Value
+		
+		Return
+	End
 	
-	Public
+	Method G:T() Property
+		Return Y
+	End
 	
-	' Fields:
-	' Nothing so far.
+	Method G:Void(Value:T) Property
+		Y = Value
+		
+		Return
+	End
+	
+	Method B:T() Property
+		Return Z
+	End
+	
+	Method B:Void(Value:T) Property
+		Z = Value
+		
+		Return
+	End
 End
 
 #Rem
@@ -2675,64 +2166,50 @@ End
 
 Class Vector4D<T> Extends Vector3D<T>
 	' Constant variables:
-	Const APOS:Int = XPOS
-	Const BPOS:Int = YPOS
-	Const CPOS:Int = ZPOS
-	Const DPOS:Int = ZPOS+1
+	Const WPOS:= VECTOR_WPOSITION
 	
-	Const VECTORSIZE:Int = 4
+	Const INTERNAL_SIZE:Int = 4
 	
-	' Global variable(s):
-	
-	#If VECTOR_LEGACY_NAME_STRINGS
-		' The name of this class.
-		Global Name_Str:= Vector4D_Name_Str
-	#End
-
 	' Functions:
 	Function Name:String()
-		#If VECTOR_LEGACY_NAME_STRINGS
-			Return Name_Str
-		#Else
-			Return Vector4D_Name_Str
-		#End
+		Return "Vector(4D)"
 	End
 	
-	Function FromInts:Vector4D<T>(A:Int, B:Int, C:Int, D:Int)
-		Return New Vector4D<T>(T(A), T(B), T(C), T(D))
+	Function FromInts:Vector4D<T>(X:Int, Y:Int, Z:Int, W:Int)
+		Return New Vector4D<T>(T(X), T(Y), T(Z), T(W))
 	End
 	
-	Function FromFloats:Vector4D<T>(A:Float, B:Float, C:Float, D:Float)
-		Return New Vector4D(T(A), T(B), T(C), T(D))
+	Function FromFloats:Vector4D<T>(X:Float, Y:Float, Z:Float, W:Float)
+		Return New Vector4D(T(X), T(Y), T(Z), T(W))
 	End
 	
 	' Constructor(s):
 	Method New()
-		Super.New(VECTORSIZE)
+		Super.New(INTERNAL_SIZE)
 	End
 	
 	Method New(Size:Int)
 		Super.New(Size)
 	End
 	
-	Method New(Info:T[], CopyInfo:Bool)
-		Super.New(Info, CopyInfo)
+	Method New(Value:T[], CopyValue:Bool)
+		Super.New(Value, CopyValue)
 	End
 	
-	Method New(Info:T[], Size:Int=VECTORSIZE, Offset:Int=XPOS)
-		Super.New(Info, Size, Offset)
+	Method New(Value:T[], Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
+		Super.New(Value, Size, Offset)
 	End
 	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
+	Method New(V:Vector<T>, Size:Int=INTERNAL_SIZE, Offset:Int=XPOS)
 		Super.New(V, Size, Offset)
 	End
 	
-	Method New(A:T, B:T, C:T=NIL, D:T=NIL, VECTORSIZE:Int=Vector4D<T>.VECTORSIZE)
-		Super.New(A, B, C, VECTORSIZE)
+	Method New(X:T, Y:T, Z:T=NIL, W:T=NIL, INTERNAL_SIZE:Int=Vector4D<T>.INTERNAL_SIZE)
+		Super.New(X, Y, Z, INTERNAL_SIZE)
 		
-		Self.D = D
+		Self.W = W
 	End
-
+	
 	' Methods:
 	Method Clone:Vector<T>()
 		Return CloneAs4D()
@@ -2752,308 +2229,42 @@ Class Vector4D<T> Extends Vector3D<T>
 		' Local variable(s):
 		
 		' Generate a new vector.
-		Local VOUT:= CloneAs4D()
+		Local VectorOutput:= CloneAs4D()
 		
-		VOUT.Subtract(V)
+		VectorOutput.Subtract(V)
 		
 		' Return the output-vector.
-		Return VOUT
+		Return VectorOutput
 	End
 	
 	Method ToString:String()
-		Return ToString(False)
+		Return (Super.ToString() + ", W: '" + String(W) + "'")
 	End
 	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=Default_ToString_FixErrors)
-		If (Not GiveName) Then
-			' Local variable(s):
-			Local OutStr:= Super.ToString(False)
-			
-			OutStr = OutStr.Replace("X", "A")
-			OutStr = OutStr.Replace("Y", "B")
-			OutStr = OutStr.Replace("Z", "C")
-		
-			Return (OutStr + Comma + Space + "D:" + Space + SingleQuote + String(GetData(DPOS)) + SingleQuote)
-		Endif
-		
-		Return Name()
-	End
-	
-	' Properties (Public):
-	Method A:Void(Info:T) Property
-		X(Info)
-		
-		Return
-	End
-	
-	Method B:Void(Info:T) Property
-		Y(Info)
-		
-		Return
-	End
-	
-	Method C:Void(Info:T) Property
-		Z(Info)
-		
-		Return
-	End
-	
-	Method W:Void(Info:T) Property
-		SetData(DPOS, Info)
-		
-		Return
-	End
-	
-	Method D:Void(Info:T) Property
-		W(Info)
-		
-		Return
-	End
-	
-	Method A:T() Property
-		Return X
-	End
-	
-	Method B:T() Property
-		Return Y
-	End
-	
-	Method C:T() Property
-		Return Z
-	End
-	
+	' Properties:
 	Method W:T() Property
-		Return GetData(DPOS)
+		Return Data[WPOS]
 	End
 	
-	Method D:T() Property
+	Method W:Void(Value:T) Property
+		Data[WPOS] = Value
+		
+		Return
+	End
+	
+	' Color representation:
+	Method A:T() Property
 		Return W
 	End
 	
-	' Properties (Private):
-	Private
-	
-	' Nothing so far.
-	
-	Public
-	
-	' Fields:
-	' Nothing so far.
-End
-
-Class ManualVector<T> Extends Vector4D<T>
-	' Constant variables:
-	Const VECTORSIZE:Int = 5
-	
-	' Defaults:
-	Const Default_ExactGrowthThreshold:Int = VECTORSIZE
-	
-	' Global variable(s):
-	
-	#If VECTOR_LEGACY_NAME_STRINGS
-		' The name of this class.
-		Global Name_Str:= ManualVector_Name_Str
-	#End
-	
-	' Functions:
-	Function Name:String()
-		#If VECTOR_LEGACY_NAME_STRINGS
-			Return Name_Str
-		#Else
-			Return ManualVector_Name_Str
-		#End
-	End
-
-	' Constructor(s):
-	Method New()
-		Super.New(VECTORSIZE)
-	End
-	
-	Method New(Info:T[], CopyInfo:Bool)
-		Super.New(Info, CopyInfo)
-	End
-	
-	Method New(Info:T[], Size:Int=VECTORSIZE, Offset:Int=XPOS)
-		Super.New(Info, Size, Offset)
-	End
-	
-	Method New(V:Vector<T>, Size:Int=VECTORSIZE, Offset:Int=XPOS)
-		Super.New(V, Size, Offset)
-	End
-	
-	#Rem
-	Method New()
-		'Error("The 'ManualVector' class can't be created without parameters.")
-		
-		Data = New T[VECTORSIZE]
-	End
-	#End
-	
-	Method New(Size:Int)
-		Data = New T[Size]
-	End
-	
-	' Methods:
-	Method Clone:Vector<T>()
-		Return CloneAsManualVector()
-	End
-	
-	Method CloneAsManualVector:ManualVector<T>()
-		Return New ManualVector<T>(Self)
-	End
-	
-	#If Not VECTOR_SHARE_OPTIMIZATIONS
-		Method MakeBetween:Vector<T>(V:Vector<T>)
-			Return MakeBetweenManualVectors(V)
-		End
-	#End
-	
-	Method MakeBetweenManualVectors:ManualVector<T>(V:Vector<T>)
-		' Local variable(s):
-		
-		' Generate a new vector.
-		Local VOUT:= CloneAsManualVector()
-		
-		VOUT.Subtract(V)
-		
-		' Return the output-vector.
-		Return VOUT
-	End
-	
-	Method Index:T[]()
-		Return GetData()
-	End
-	
-	Method Index:T(I:Int)
-		Return GetData(I)
-	End
-	
-	Method ToString:String()
-		Return ToString(False)
-	End
-	
-	Method ToString:String(GiveName:Bool, FixErrors:Bool=True)
-		If (Not GiveName) Then
-			Local OutStr:String
-			
-			#If VECTOR_TOSTRING_USE_GENERIC_UTIL
-				OutStr = GenericUtilities<T>.AsString(GetData())
-			#Else
-				For Local Index:= XPOS Until Size
-					OutStr += String("[" + String(Index) + "]: " + SingleQuote + String(GetData(Index)) + SingleQuote)
-					
-					If (Index < LastIndex) Then
-						OutStr += (Comma + Space)
-					Endif
-				Next
-			#End
-			
-			If (FixErrors) Then
-				If (OutStr.Find(SingleQuote+SingleQuote) <> -1) Then
-					Return OutStr.Replace(SingleQuote + SingleQuote, SingleQuote + "?" + SingleQuote)
-				Endif
-			Endif
-			
-			Return OutStr
-		Endif
-		
-		Return Name()
-	End
-	
-	' Properties (Public):
-	#Rem
-	Method Size:Void(S:Int) Property
-		Resize(S)
+	Method A:Void(Value:T) Property
+		W = Value
 		
 		Return
 	End
-	#End
-	
-	Method NewSize:Void(S:Int) Property
-		Resize(S)
-		
-		Return
-	End
-	
-	Method SetSize:Void(S:Int) Property
-		Resize(S)
-		'NewSize(S)
-	
-		Return
-	End
-	
-	Method A:Void(Info:T) Property
-		If (Data.Length() > APOS) Then
-			Super.A(Info)
-		Endif
-		
-		Return
-	End
-	
-	Method B:Void(Info:T) Property
-		If (Data.Length() > BPOS) Then
-			Super.B(Info)
-		Endif
-		
-		Return
-	End
-	
-	Method C:Void(Info:T) Property
-		If (Data.Length() > CPOS) Then
-			Super.C(Info)
-		Endif
-		
-		Return
-	End
-	
-	Method D:Void(Info:T) Property
-		If (Data.Length() > DPOS) Then
-			Super.D(Info)
-		Endif
-		
-		Return
-	End
-	
-	Method AutoGrow:Bool() Property
-		Return Super.AutoGrow()
-	End
-	
-	Method AutoGrow:Void(Input:Bool) Property
-		Super.AutoGrow(Input)
-		
-		Return
-	End
-	
-	Method ExactGrowthThreshold:Int() Property
-		Return Self._ExactGrowthThreshold
-	End
-	
-	Method ExactGrowthThreshold:Void(Input:Int) Property
-		Self._ExactGrowthThreshold = Input
-		
-		Return
-	End
-	
-	' Properties (Private):
-	Private
-	
-	' Nothing so far.
-	
-	Public
-	
-	' Fields (Public):
-	' Nothing so far.
-	
-	' Fields (Private):
-	Private
-	
-	' I'm not normally one to do this, but...
-	Field _ExactGrowthThreshold:Int = Default_ExactGrowthThreshold
-	
-	Public
 End
 
 ' Functions:
 Function DotProductNormalized:Float(V1:Vector<Float>, V2:Vector<Float>)
-	Return AbstractVector<Float>.DotProductNormalized(V1, V2)
+	Return VectorModel<Float>.DotProductNormalized(V1, V2)
 End
