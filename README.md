@@ -1,21 +1,9 @@
 vector
 ======
 
-The standard vector module for most [Monkey code](https://github.com/blitz-research/monkey) publicly available from both the Regal Internet Brothers, and Sonickidnextgen/ImmutableOctet.
+A vector module for the [Monkey programming language](https://github.com/blitz-research/monkey).
 
-**Requirements:**
-* ['util'](https://github.com/Regal-Internet-Brothers/util): The standard vector implementations utilize the 'util' module's container/array management code.
-
-**Optional Dependencies:**
-* ['ioelement'](https://github.com/Regal-Internet-Brothers/ioelement): All standard vector implementations can optionally support the 'SerializableElement' interface.
-	* ['brl.stream'](https://github.com/blitz-research/monkey/blob/develop/modules/brl/stream.monkey): Used for standard serialization via the 'ioelement' module's 'SerializableElement' interface.
-
-* 'supportlayer' (Local module): Can be partially toggled using the 'VECTOR_TYPEFIXES' and/or 'VECTOR_SUPPORTLAYER_TYPEFIXES' preprocessor variables.
-	* ['boxutil'](https://github.com/Regal-Internet-Brothers/boxutil): Used for handling the standard "box" classes.
+This branch provides an experimental version of the main API. This version is meant to improve the underlying functionality of this module. Compatibility has *mostly* been broken, but a decent bit of existing code will work with little modification. **Use this version at your own risk.**
 
 **References:**
 * [V. Lehtinen's vector implementation](http://www.monkey-x.com/Community/posts.php?topic=8998).
-
-**Documentation notes (README):**
-* Any entries offset from the current entry by one 'TAB' character will act as a requirement for the entry one step above. If no sub-entries are present, then either there aren't extra requirements, or there isn't sufficient documentation.
-* If a sub-entry is described as explicitly optional (Or required), that notation will take priority. This also goes for instances where entire sections are defined as optional or required.
