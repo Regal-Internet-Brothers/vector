@@ -288,7 +288,6 @@ Interface Vector<T>
 	
 	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method DotProductNormalized:T(V:Vector<T>)
 	
 	Method SubtractTowardsZero:Void(Time:T=VectorModel<T>.ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
 	
@@ -371,10 +370,6 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 		Return "Vector (Abstract)"
 	End
 	
-	Function DotProductNormalized:T(V1:Vector<T>, V2:Vector<T>)
-		Return V1.DotProductNormalized(V2)
-	End
-	
 	Function VectorError:Void(Message:String, Template:String=VECTOR_GENERIC_ERROR_TEMPLATE)
 		DebugError(Template+Message)
 		
@@ -416,13 +411,7 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 		Assign(V, Size, Offset, FitVector)
 	End
 	
-	Method Clone:Vector<T>()
-		Return CloneAsAbstract()
-	End
-	
-	Method CloneAsAbstract:VectorModel<T>()
-		Return New VectorModel<T>(Self)
-	End
+	Method Clone:Vector<T>() Abstract
 	
 	Method Clone:Void(V:Vector<T>, FitVector:Bool)
 		Assign(V, FitVector)
@@ -1066,52 +1055,21 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 		Return Sum
 	End
 	
-	Method DotProductNormalized:T(V:Vector<T>)
-		Return DotProductNormalized(V, Null, Null)
-	End
-	
 	#Rem
 		ARGUMENT NOTES:
-			* The 'FTV' and 'STV' arguments stand for "First Temporary Vector" and "Second Temporary Vector".
-			Effectively, if you send in one or both vectors, the data of 'V' and this object will be copied to them.
-			
-			So, if you don't want an object to be generated, you should give this pre-allocated vectors of some kind.
-	
-			Those temporary vectors should be either able to be resized when needed (The standard implementations here do this),
-			or they'll need to be the same sizes as the associated vectors.
-			
 			* The 'V_Length' and 'V_Offset' arguments are referring to the 'V' argument.
 			* The 'VData_Length' and 'VData_Offset' arguments are referring to the current vector (Self).
 	#End
 	
-	Method DotProductNormalized:T(V:Vector<T>, FTV:Vector<T>, STV:Vector<T>, V_Length:Int=AUTO, V_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-		If (V_Length = AUTO) Then
-			V_Length = V.Size
-		Endif
-		
-		' Local variable(s):
-		Local Size:= Min(Self.Size, V.Size)
-		
-		' Calculate the length and offset for 'STV':
-		Local STV_Length:= Min(V_Length, Size)
-		Local STV_Offset:= Min(V_Offset, Size)
+	Method DotProductNormalized:T(V:Vector<T>, FTV:Vector<T>, STV:Vector<T>)
 		
 		' Generate or mutate the two vectors:
-		If (FTV = Null) Then
-			FTV = New VectorModel<T>(Self, VData_Length, VData_Offset)
-		Else
-			FTV.Copy(Self, VData_Length, VData_Offset)
-		Endif
-		
-		If (STV = Null) Then
-			STV = New VectorModel<T>(V, STV_Length, STV_Offset)
-		Else
-			STV.Copy(V, STV_Length, STV_Offset)
-		Endif
+		FTV.Copy(Self)
+		STV.Copy(V)
 		
 		' Normalize the two vectors:
-		FTV.Normalize(VData_Length, VData_Offset)
-		STV.Normalize(STV_Length, STV_Offset)
+		FTV.Normalize()
+		STV.Normalize()
 		
 		' Return the calculated result.
 		Return FTV.DotProduct(STV)
@@ -2252,7 +2210,7 @@ Class Vector4D<T> Extends Vector3D<T>
 		Return
 	End
 	
-	' Color representation:
+	' Color properties:
 	Method A:T() Property
 		Return W
 	End
