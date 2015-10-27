@@ -184,12 +184,10 @@ Public
 #End
 
 ' Imports (Public):
-
-' ImmutableOctet:
-Import boxutil
-Import util
-Import ioelement
-Import sizeof
+Import regal.boxutil
+Import regal.util
+Import regal.ioelement
+Import regal.sizeof
 
 ' Imports (Private):
 Private

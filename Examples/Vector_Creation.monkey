@@ -3,7 +3,7 @@ Strict
 Public
 
 ' Imports:
-Import vector
+Import regal.vector
 
 ' Functions:
 Function Main:Int()
