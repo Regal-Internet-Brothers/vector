@@ -6,7 +6,7 @@ Public
 	DESCRIPTION:
 		* This file contains all of the "abstracted" routines used within the 'vector' module.
 		
-		Basically, this contains work arounds for types which have problems being used in specific ways.
+		Basically, this contains workarounds for types which have problems being used in specific ways.
 		For example, at the time of writing this, support for the standard "box" classes needs to be explicit.
 		
 		This layer can be opened up via the preprocessor using 'vector', or imported separately.
