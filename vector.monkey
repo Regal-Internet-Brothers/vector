@@ -154,10 +154,10 @@ Public
 Private
 
 ' External:
-Import util
-Import sizeof
-Import boxutil
-Import ioelement
+Import regal.util
+Import regal.sizeof
+Import regal.boxutil
+Import regal.ioelement
 
 Import brl.stream
 

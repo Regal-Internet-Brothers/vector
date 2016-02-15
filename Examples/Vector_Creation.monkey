@@ -3,13 +3,13 @@ Strict
 Public
 
 ' Imports:
-Import vector
+Import regal.vector
 
 ' Functions:
 Function Main:Int()
-	Local V2:= New Vector2D<Int>(2, 3)
-	Local V3:= New Vector3D<Int>(V2.X, V2.Y, 7)
-	Local V4:= New Vector4D<Int>(V3.X, V3.Y, V3.Z, 11)
+	Local V2:= New Vector2D<Int>(1, 2)
+	Local V3:= New Vector3D<Int>(V2.X, V2.Y, 3)
+	Local V4:= New Vector4D<Int>(V3.X, V3.Y, V3.Z, 4)
 	
 	Print(V2)
 	Print(V3)
