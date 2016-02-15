@@ -2,7 +2,18 @@ Strict
 
 Public
 
+' Preprocessor related:
+#REFLECT_EVERYTHING = True
+
+#If REFLECT_EVERYTHING
+	#REFLECTION_FILTER = "regal.*"
+#End
+
 ' Imports:
+#If REFLECT_EVERYTHING
+	Import reflection
+#End
+
 Import regal.vector
 
 ' Functions:

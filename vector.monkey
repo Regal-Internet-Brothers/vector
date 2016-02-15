@@ -2223,6 +2223,8 @@ Class Vector4D<T> Extends Vector3D<T>
 End
 
 ' Functions:
+#Rem
 Function DotProductNormalized:Float(V1:Vector<Float>, V2:Vector<Float>)
 	Return VectorModel<Float>.DotProductNormalized(V1, V2)
 End
+#End

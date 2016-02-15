@@ -13,10 +13,10 @@ Public
 #End
 
 ' Imports:
-Import vector
+Import vector ' regal.vector
 
 #If VECTOR_SUPPORTLAYER_TYPEFIXES
-	Import boxutil
+	Import regal.boxutil
 #End
 
 ' Aliases:
