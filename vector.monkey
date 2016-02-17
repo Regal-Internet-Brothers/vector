@@ -19,7 +19,7 @@ Public
 		
 		* Most methods (Unless explicitly stated otherwise) will affect the vector they're used from.
 		
-		For example, the 'Add' command found in the 'VectorModel' class does not produce a vector of any kind.
+		For example, the 'Add' command found in the 'Vector' class does not produce a vector of any kind.
 		This command only affects its own object's ('Self') data, meaning it will mutate based on the input.
 		
 		However, it will likely not mutate the input itself.
@@ -194,22 +194,8 @@ Const VECTOR_YPOSITION:= 1
 Const VECTOR_ZPOSITION:= 2
 Const VECTOR_WPOSITION:= 3
 
-' Interfaces:
-
-#Rem
-	There are a number of requirements for implementing a vector class.
-	This interface shows exactly what those are.
-	Any class following this interface can work with the standard implementation.
-	
-	This is also used by the standard vector classes
-	as a nonspecific interface between each other.
-	Such functionality may or may not be required by this interface.
-	
-	If you decide to implement this, please use this interface for commands
-	in your own vector class, which do not need instances of that specific class.
-#End
-
-Interface Vector<T>
+' Classes:
+Class Vector<T> Implements SerializableElement Abstract
 	' Constant variable(s):
 	Const XPOS:= VECTOR_XPOSITION
 	Const YPOS:= VECTOR_YPOSITION
@@ -218,132 +204,8 @@ Interface Vector<T>
 	
 	Const AUTO:= VECTOR_AUTO
 	
-	' Methods:
-	
-	' General purpose commands:
-	Method Clone:Vector<T>()
-	
-	Method Copy:Void(V:Vector<T>, FitVector:Bool)
-	Method Copy:Void(V:Vector<T>, Size:Int=AUTO, Offset:Int=XPOS, FitVector:Bool=False)
-	
-	Method Copy:Void(Value:T[], FitValue:Bool)
-	Method Copy:Void(Value:T[], Size:Int=AUTO, Offset:Int=XPOS, FitValue:Bool=False)
-	
-	' Mathematical commands:
-	Method Zero:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Absolute:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Negate:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method ForceNegative:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method ApplyMin:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method ApplyMax:Void(Value:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method ApplyClamp:Void(MinValue:T, MaxValue:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Add:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method Add:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Add:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method DeltaAdd:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method DeltaAdd:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method DeltaAdd:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method DeltaSubtract:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method DeltaSubtract:Void(A:T[], Scalar:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method DeltaSubtract:Void(F:T, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Decelerate:Void(Deceleration:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Accelerate:Void(V:Vector<T>, Scalar:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Subtract:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Subtract:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method Subtract:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Divide:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Divide:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method Divide:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Multiply:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Multiply:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	Method Multiply:Void(F:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method LinearInterpolation:Void(V:Vector<T>, t:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method LinearInterpolation:Void(A:T[], t:T, A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	
-	Method Normalize:Void(VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Normalize:Void(Length:T, VData_Length:Int, VData_Offset:Int)
-	
-	Method IsNormalTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method IsNormalTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	
-	Method IsEqualTo:Bool(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method IsEqualTo:Bool(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	
-	Method Distance:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Distance:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	
-	' This is effectively an alias for 'Add'.
-	' The return value is the amount possible. (Usually the same as the input)
-	Method Offset:T(Amount:T)
-	
-	Method DotProduct:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method DotProduct:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
-	
-	Method SubtractTowardsZero:Void(Time:T=VectorModel<T>.ONE, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method ProjectionScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method ProjectionScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Project:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method Project:Void(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	' This is basically the same as 'Multiply'.
-	Method Project:Void(Scalar:T)
-	
-	Method MakeBetween:Vector<T>(V:Vector<T>)
-	
-	Method AngleBetween:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method AngleBetween:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method AngleBetweenCos:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method AngleBetweenCos:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method AngleBetweenSin:T(V:Vector2D<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method AngleBetweenSin:T(A:T[], TempVector:Vector<T>)
-	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, TempVector:Vector<T>=Null)
-	
-	Method LengthScalar:T(V:Vector<T>, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	Method LengthScalar:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS)
-	
-	Method Normalized:Vector<T>(VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
-	Method Normalized:Vector<T>(Length:T, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, OutputVector:Vector<T>=Null)
-	
-	' This does not have to be legitimately implemented.
-	' Even if you were to implement it, it's not going to be efficient.
-	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
-	
-	' Properties:
-	Method Data:T[]() Property
-	Method Size:Int() Property
-	
-	' This isn't based on default arguments due to issues with the type of 'T'.
-	Method Length:T() Property
-	
-	Method Length:T(VData_Length:Int, VData_Offset:Int) Property
-	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
-	Method Length:Void(Value:T) Property
-End
-
-' Classes:
-Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
-	' Constant variable(s):
-	
-	' The position of the 'X' property.
-	Const XPOS:= VECTOR_XPOSITION
-	
 	' The size of this vector-type.
 	Const INTERNAL_SIZE:Int = 1
-	
-	' General:
-	Const AUTO:= VECTOR_AUTO
 	
 	' Error template(s):
 	Const VECTOR_GENERIC_ERROR_TEMPLATE:String = "{VECTOR} {ERROR}: "
@@ -1172,7 +1034,7 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 	
 	Method AngleBetweenSin:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS, VData_Length:Int=AUTO, VData_Offset:Int=XPOS, TempVector:Vector<T>=Null)
 		If (TempVector = Null) Then
-			TempVector = New VectorModel(A, A_Length, A_Offset)
+			TempVector = New Vector(A, A_Length, A_Offset)
 		Else
 			TempVector.Copy(A, A_Length, A_Offset)
 		Endif
@@ -1359,9 +1221,8 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 	Public
 End
 
-Class Vector2D<T> Extends VectorModel<T>
+Class Vector2D<T> Extends Vector<T>
 	' Constant variables:
-	Const YPOS:= VECTOR_YPOSITION
 	Const INTERNAL_SIZE:Int = 2
 
 	' Functions:
@@ -1816,7 +1677,6 @@ End
 
 Class Vector3D<T> Extends Vector2D<T>
 	' Constant variables:
-	Const ZPOS:= VECTOR_ZPOSITION
 	Const INTERNAL_SIZE:Int = 3
 	
 	' Functions:
@@ -2120,8 +1980,6 @@ End
 
 Class Vector4D<T> Extends Vector3D<T>
 	' Constant variables:
-	Const WPOS:= VECTOR_WPOSITION
-	
 	Const INTERNAL_SIZE:Int = 4
 	
 	' Functions:
@@ -2217,10 +2075,3 @@ Class Vector4D<T> Extends Vector3D<T>
 		Return
 	End
 End
-
-' Functions:
-#Rem
-Function DotProductNormalized:Float(V1:Vector<Float>, V2:Vector<Float>)
-	Return VectorModel<Float>.DotProductNormalized(V1, V2)
-End
-#End
