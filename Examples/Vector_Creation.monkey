@@ -3,7 +3,7 @@ Strict
 Public
 
 ' Preprocessor related:
-#REFLECT_EVERYTHING = True
+'#REFLECT_EVERYTHING = True
 
 #If REFLECT_EVERYTHING
 	#REFLECTION_FILTER = "regal.*"

@@ -509,10 +509,9 @@ Class VectorModel<T> Implements Vector<T>, SerializableElement Abstract
 			Size = Value.Length
 		Endif
 		
-		'Self.Data = GenericUtilities<T>.CopyArray(Value, Self.Data, FitValue)
-		Self.Data = GenericUtilities<T>.CopyArray(Value, Self.Data, Offset, XPOS, Size, AUTO, FitValue)
-		
+		'AssignByRef(GenericUtilities<T>.CopyArray(Value, Self.Data, FitValue))
 		'AssignByRef(Value.Resize(Size))
+		AssignByRef(GenericUtilities<T>.CopyArray(Value, Self.Data, Offset, XPOS, Size, AUTO, FitValue))
 		
 		Return
 	End
@@ -1946,19 +1945,16 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return VectorOutput
 	End
 	
-	Method RotateTowards:Void(V:Vector2D<T>)
-		' Local variable(s):
+	Method RotateYawTowards:Void(V3D:Vector3D<T>)
+		RotateTowards_3D(V3D)
 		
-		' Check if the input was a 'Vector3D'.
-		Local V3D:= Vector3D<T>(V)
+		Return
+	End
+	
+	Method RotateYawTowards:Void(V2D:Vector2D<T>)
+		Local Product:= CrossProduct_2D(V2D)
 		
-		If (V3D <> Null) Then
-			RotateTowards_3D(V3D)
-		Else
-			Local Product:= CrossProduct_2D(V)
-			
-			Rotate_2DIn3D(Cos(Product), Sin(Product))
-		Endif
+		Rotate_2DIn3D(Cos(Product), Sin(Product))
 		
 		Return
 	End
