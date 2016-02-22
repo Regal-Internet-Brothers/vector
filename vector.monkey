@@ -1126,6 +1126,11 @@ Class Vector<T> Implements SerializableElement Abstract
 		End
 	#End
 	
+	' Legacy API:
+	Method GetData:T[]() Property
+		Return Data
+	End
+	
 	' Properties:
 	Method Data:T[]() Property
 		Return Self._Data
