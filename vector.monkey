@@ -1172,11 +1172,11 @@ Class Vector<T> Implements SerializableElement Abstract
 		Return
 	End
 	
-	Method X:T() Property
+	Method X:T() Property Final
 		Return Data[XPOS]
 	End
 	
-	Method X:Void(Value:T) Property
+	Method X:Void(Value:T) Property Final
 		Data[XPOS] = Value
 	
 		Return
@@ -1661,32 +1661,32 @@ Class Vector2D<T> Extends Vector<T>
 		Return AbsoluteNumber(Delta_1D)
 	End
 	
-	Method Y:T() Property
+	Method Y:T() Property Final
 		Return Data[YPOS]
 	End
 	
-	Method Y:Void(Value:T) Property
+	Method Y:Void(Value:T) Property Final
 		Data[YPOS] = Value
 		
 		Return
 	End
 	
 	' Directional properties:
-	Method Left:T() Property
+	Method Left:T() Property Final
 		Return X
 	End
 	
-	Method Left:Void(Value:T) Property
+	Method Left:Void(Value:T) Property Final
 		X = Value
 		
 		Return
 	End
 	
-	Method Right:T() Property
+	Method Right:T() Property Final
 		Return Y
 	End
 	
-	Method Right:Void(Value:T) Property
+	Method Right:Void(Value:T) Property Final
 		Y(Value)
 		
 		Return
@@ -1789,7 +1789,7 @@ Class Vector3D<T> Extends Vector2D<T>
 		Return VectorOutput
 	End
 	
-	Method CrossProduct_3D:Void(V:Vector3D<T>) Final
+	Method CrossProduct_3D:Void(V:Vector3D<T>) ' Final
 		' Local variable(s):
 		
 		' Cache the internal-data locally:
@@ -1801,6 +1801,33 @@ Class Vector3D<T> Extends Vector2D<T>
 		Self.X = Y*V.Z - Z*V.Y
 		Self.Y = Z*V.X - X*V.Z
 		Self.Z = X*V.Y - Y*V.X
+		
+		Return
+	End
+	
+	Method CrossProduct_3D:Void(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) ' Final
+		' Local variable(s):
+		Local A_RawLength:= A.Length
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		If ((A_Length - A_Offset) < 3) Then
+			Return
+		Endif
+		
+		Local O:= A_Offset
+		
+		' Cache the internal-data locally:
+		Local X:= Self.X
+		Local Y:= Self.Y
+		Local Z:= Self.Z
+		
+		' Calculate the product:
+		Self.X = Y*A[O+2] - Z*A[O+1]
+		Self.Y = Z*A[O] - X*A[O+2]
+		Self.Z = X*A[O+1] - Y*A[O]
 		
 		Return
 	End
@@ -1944,42 +1971,42 @@ Class Vector3D<T> Extends Vector2D<T>
 	End
 	
 	' Properties:
-	Method Z:T() Property
+	Method Z:T() Property Final
 		Return Data[ZPOS]
 	End
 	
-	Method Z:Void(Value:T) Property
+	Method Z:Void(Value:T) Property Final
 		Data[ZPOS] = Value
 		
 		Return
 	End
 	
 	' Color properties:
-	Method R:T() Property
+	Method R:T() Property Final
 		Return X
 	End
 	
-	Method R:Void(Value:T) Property
+	Method R:Void(Value:T) Property Final
 		X = Value
 		
 		Return
 	End
 	
-	Method G:T() Property
+	Method G:T() Property Final
 		Return Y
 	End
 	
-	Method G:Void(Value:T) Property
+	Method G:Void(Value:T) Property Final
 		Y = Value
 		
 		Return
 	End
 	
-	Method B:T() Property
+	Method B:T() Property Final
 		Return Z
 	End
 	
-	Method B:Void(Value:T) Property
+	Method B:Void(Value:T) Property Final
 		Z = Value
 		
 		Return
@@ -2072,22 +2099,22 @@ Class Vector4D<T> Extends Vector3D<T>
 	End
 	
 	' Properties:
-	Method W:T() Property
+	Method W:T() Property Final
 		Return Data[WPOS]
 	End
 	
-	Method W:Void(Value:T) Property
+	Method W:Void(Value:T) Property Final
 		Data[WPOS] = Value
 		
 		Return
 	End
 	
 	' Color properties:
-	Method A:T() Property
+	Method A:T() Property Final
 		Return W
 	End
 	
-	Method A:Void(Value:T) Property
+	Method A:Void(Value:T) Property Final
 		W = Value
 		
 		Return
