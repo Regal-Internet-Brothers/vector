@@ -237,6 +237,28 @@ Class Vector<T> Implements SerializableElement Abstract
 		
 		Return
 	End
+	
+	' Math routines:
+	Function SumSquared:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		' Local variable(s):
+		Local A_RawLength:= A.Length
+		
+		If (A_Length = AUTO) Then
+			A_Length = A_RawLength
+		Endif
+		
+		Local Sum:T = ZERO
+		
+		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
+			Sum += Sq(A[Index])
+		Next
+		
+		Return Sum
+	End
+	
+	Function Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS)
+		Return Sqrt(SumSquared(A, A_Length, A_Offset))
+	End
 
 	' Constructor(s) (Public):
 	Method New(Size:Int)
@@ -1080,6 +1102,14 @@ Class Vector<T> Implements SerializableElement Abstract
 		Return OutputVector
 	End
 	
+	Method SumSquared:T(VData_Length:Int, VData_Offset:Int)
+		Return SumSquared(Self.Data, VData_Length, VData_Offset)
+	End
+	
+	Method Length:T(VData_Length:Int, VData_Offset:Int)
+		Return Length(Self.Data, VData_Length, VData_Offset)
+	End
+	
 	Method CrossProduct:Vector<T>(V:Vector<T>, VectorOutput:Vector<T>=Null)
 		Return Null
 	End
@@ -1156,25 +1186,8 @@ Class Vector<T> Implements SerializableElement Abstract
 		Return Length(AUTO, XPOS)
 	End
 	
-	Method Length:T(VData_Length:Int, VData_Offset:Int) Property
-		Return Length(Self.Data, VData_Length, VData_Offset)
-	End
-	
-	Method Length:T(A:T[], A_Length:Int=AUTO, A_Offset:Int=XPOS) Property
-		' Local variable(s):
-		Local A_RawLength:= A.Length
-		
-		If (A_Length = AUTO) Then
-			A_Length = A_RawLength
-		Endif
-		
-		Local Sum:T = ZERO
-		
-		For Local Index:= A_Offset Until Min(Data.Length, Min(A_RawLength, A_Length))
-			Sum += Sq(A[Index])
-		Next
-		
-		Return Sqrt(Sum)
+	Method SumSquared:T() Property
+		Return SumSquared(AUTO, XPOS)
 	End
 	
 	Method Length:Void(Value:T) Property
