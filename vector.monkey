@@ -1825,9 +1825,9 @@ Class Vector3D<T> Extends Vector2D<T>
 		Local Z:= Self.Z
 		
 		' Calculate the product:
-		Self.X = Y*A[O+2] - Z*A[O+1]
-		Self.Y = Z*A[O] - X*A[O+2]
-		Self.Z = X*A[O+1] - Y*A[O]
+		Self.X = Y*A[O+ZPOS] - Z*A[O+YPOS]
+		Self.Y = Z*A[O+XPOS] - X*A[O+ZPOS]
+		Self.Z = X*A[O+YPOS] - Y*A[O+XPOS]
 		
 		Return
 	End
