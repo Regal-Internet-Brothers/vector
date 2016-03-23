@@ -148,7 +148,14 @@ Public
 #VECTOR_ALLOW_SERIALIZATION = True
 
 ' Imports (Public):
+<<<<<<< HEAD
 ' Nothing so far.
+=======
+Import regal.boxutil
+Import regal.util
+Import regal.ioelement
+Import regal.sizeof
+>>>>>>> 75b17cb741117060de558e94086d7b6a73edbdb4
 
 ' Imports (Private):
 Private

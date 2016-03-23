@@ -13,7 +13,11 @@ Public
 #End
 
 ' Imports:
+<<<<<<< HEAD
 Import vector ' regal.vector
+=======
+Import regal.vector
+>>>>>>> 75b17cb741117060de558e94086d7b6a73edbdb4
 
 #If VECTOR_SUPPORTLAYER_TYPEFIXES
 	Import regal.boxutil
